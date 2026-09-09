@@ -858,3 +858,67 @@ const acikOturum = localStorage.getItem("kaganPlanner_oturum");
 if (acikOturum) {
   girisBasarili(acikOturum);
 }
+
+// --- 10. VERİ YEDEKLEME (EXPORT / IMPORT) & PWA ---
+const yedekIndirBtn = document.getElementById("yedekIndirBtn");
+const yedekYukleBtn = document.getElementById("yedekYukleBtn");
+const yedekDosyaInput = document.getElementById("yedekDosyaInput");
+
+// JSON Olarak Dışa Aktar
+yedekIndirBtn.addEventListener("click", () => {
+  if (!aktifKullanici) return;
+
+  const yedekVerisi = {
+    kullanici: aktifKullanici,
+    tarih: new Date().toISOString(),
+    etkinlikler: etkinlikler,
+    hesaplar: getHesaplar()
+  };
+
+  const veriStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(yedekVerisi, null, 2));
+  const indirBaglanti = document.createElement("a");
+  indirBaglanti.setAttribute("href", veriStr);
+  indirBaglanti.setAttribute("download", `kaganstudio_yedek_${aktifKullanici}.json`);
+  document.body.appendChild(indirBaglanti);
+  indirBaglanti.click();
+  indirBaglanti.remove();
+});
+
+// JSON Dosyası Seçtir
+yedekYukleBtn.addEventListener("click", () => {
+  yedekDosyaInput.click();
+});
+
+// Dosyayı Oku ve İçeri Aktar
+yedekDosyaInput.addEventListener("change", (e) => {
+  const dosya = e.target.files[0];
+  if (!dosya) return;
+
+  const okuyucu = new FileReader();
+  okuyucu.onload = (olay) => {
+    try {
+      const yuklenen = JSON.parse(olay.target.result);
+      if (yuklenen.etkinlikler && Array.isArray(yuklenen.etkinlikler)) {
+        etkinlikler = yuklenen.etkinlikler;
+        if (yuklenen.hesaplar) hesapKaydet(yuklenen.hesaplar);
+        herSeyiCiz();
+        konfetiVeKutlama();
+        alert("✨ Verilerin başarıyla geri yüklendi!");
+      } else {
+        alert("Geçersiz yedek dosyası formatı.");
+      }
+    } catch (hata) {
+      alert("Dosya okunurken bir hata oluştu: " + hata.message);
+    }
+  };
+  okuyucu.readAsText(dosya);
+});
+
+// Service Worker Kaydı (PWA Çevrimdışı Çalışma Desteği)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => {
+      console.log("Service Worker kaydedilemedi:", err);
+    });
+  });
+}
