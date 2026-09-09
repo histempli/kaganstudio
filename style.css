@@ -1,3 +1,20 @@
+/* Sayfanın küçülmesini (zoom out olmasını) kesin olarak engelle */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Üst barın elemanlarını mobil ekrana sığdır */
+.ust-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
 /* Mobil ve esnek görünüm düzeltmesi */
 body {
   zoom: 1;
