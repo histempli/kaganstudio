@@ -69,7 +69,7 @@ const toplulukModali = document.getElementById("toplulukModali");
 const toplulukKapatBtn = document.getElementById("toplulukKapatBtn");
 const toplulukListesi = document.getElementById("toplulukListesi");
 
-// Tema & Bildirim
+// Bildirim & Alarm & Tema
 const bildirimIzinBtn = document.getElementById("bildirimIzinBtn");
 const alarmKarti = document.getElementById("alarmKarti");
 const alarmBaslik = document.getElementById("alarmBaslik");
@@ -83,6 +83,11 @@ const renkNoktalari = document.querySelectorAll(".renk-noktasi");
 // Zen & Ortam Sesleri
 const zenModuBtn = document.getElementById("zenModuBtn");
 const ortamSesiSecim = document.getElementById("ortamSesiSecim");
+
+// Yedekleme DOM
+const yedekIndirBtn = document.getElementById("yedekIndirBtn");
+const yedekYukleBtn = document.getElementById("yedekYukleBtn");
+const yedekDosyaInput = document.getElementById("yedekDosyaInput");
 
 // --- 1. AUTH SİSTEMİ ---
 let authModu = "giris";
@@ -192,7 +197,11 @@ function kullaniciVerileriniYukle() {
   const kayitliVeri = localStorage.getItem(depoAnahtari);
 
   if (kayitliVeri) {
-    etkinlikler = JSON.parse(kayitliVeri);
+    try {
+      etkinlikler = JSON.parse(kayitliVeri) || [];
+    } catch (err) {
+      etkinlikler = [];
+    }
   } else {
     etkinlikler = [
       {
@@ -248,7 +257,6 @@ function herSeyiCiz() {
   haftalikCiz();
   aylikCiz();
   ilerlemeGuncelle();
-  kullaniciVerileriniKaydet();
 }
 
 function altGorevRozetiUret(altlar, mini = false) {
@@ -261,6 +269,11 @@ function altGorevRozetiUret(altlar, mini = false) {
 // 3A. Liste
 function listeCiz() {
   listeKapsayici.innerHTML = "";
+  if (etkinlikler.length === 0) {
+    listeKapsayici.innerHTML = `<div style="text-align:center;padding:24px;color:var(--yazi-ikincil);font-size:14px;">Henüz eklenmiş bir görev bulunmuyor.</div>`;
+    return;
+  }
+
   etkinlikler.forEach(e => {
     const satir = document.createElement("div");
     satir.className = `gorev-satir ${e.tamamlandi ? "tamamlandi" : ""}`;
@@ -292,6 +305,7 @@ function listeCiz() {
       }
 
       if (e.tamamlandi) konfetiVeKutlama();
+      kullaniciVerileriniKaydet();
       herSeyiCiz();
 
       if (aktifSeciliEtkinlikId === e.id) {
@@ -302,6 +316,7 @@ function listeCiz() {
     satir.querySelector(".sil").addEventListener("click", (ev) => {
       ev.stopPropagation();
       etkinlikler = etkinlikler.filter(item => item.id !== e.id);
+      kullaniciVerileriniKaydet();
       if (aktifSeciliEtkinlikId === e.id) cekmeceyiKapat();
       herSeyiCiz();
     });
@@ -466,12 +481,14 @@ function altGorevleriCiz(e) {
         e.tamamlandi = false;
       }
 
+      kullaniciVerileriniKaydet();
       altGorevleriCiz(e);
       herSeyiCiz();
     });
 
     item.querySelector(".alt-sil-btn").addEventListener("click", () => {
       e.altGorevler = e.altGorevler.filter(a => a.id !== alt.id);
+      kullaniciVerileriniKaydet();
       altGorevleriCiz(e);
       herSeyiCiz();
     });
@@ -499,6 +516,7 @@ function yeniAltGorevEkle() {
   }
 
   altGorevInput.value = "";
+  kullaniciVerileriniKaydet();
   altGorevleriCiz(e);
   herSeyiCiz();
 }
@@ -656,6 +674,7 @@ function yeniEtkinlikEkle() {
   etkinlikler.push(yeni);
   etkinlikBaslik.value = "";
   etkinlikSaat.value = "";
+  kullaniciVerileriniKaydet();
   herSeyiCiz();
 }
 
@@ -817,7 +836,6 @@ zenModuBtn.addEventListener("click", () => {
   }
 });
 
-// Gerçek yüksek kaliteli (HQ) ortam ses akışları
 const sesDosyalari = {
   yagmur: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
   somine: "https://actions.google.com/sounds/v1/ambiences/fire.ogg",
@@ -827,7 +845,6 @@ const sesDosyalari = {
 let aktifAudio = null;
 
 function ortamSesiCal(tur) {
-  // Önce çalan sesi durdur ve temizle
   if (aktifAudio) {
     aktifAudio.pause();
     aktifAudio.currentTime = 0;
@@ -837,11 +854,11 @@ function ortamSesiCal(tur) {
   if (tur === "kapali" || !sesDosyalari[tur]) return;
 
   aktifAudio = new Audio(sesDosyalari[tur]);
-  aktifAudio.loop = true;      // Sürekli kesintisiz döngü
-  aktifAudio.volume = 0.45;     // Odaklanmayı bozmayacak yumuşak ses seviyesi
+  aktifAudio.loop = true;
+  aktifAudio.volume = 0.45;
 
   aktifAudio.play().catch(err => {
-    console.warn("Tarayıcı otomatik ses oynatmayı engelledi, kullanıcı etkileşimi bekleniyor:", err);
+    console.warn("Otomatik ses oynatılamadı:", err);
   });
 }
 
@@ -849,22 +866,7 @@ ortamSesiSecim.addEventListener("change", (e) => {
   ortamSesiCal(e.target.value);
 });
 
-// Başlangıç Ayarları
-const kayitliPastel = localStorage.getItem("kaganPlanner_pastelRenk") || "sade";
-pastelRenkUygula(kayitliPastel);
-temaUygula(localStorage.getItem("kaganPlannerTema") || "light");
-
-const acikOturum = localStorage.getItem("kaganPlanner_oturum");
-if (acikOturum) {
-  girisBasarili(acikOturum);
-}
-
-// --- 10. VERİ YEDEKLEME (EXPORT / IMPORT) & PWA ---
-const yedekIndirBtn = document.getElementById("yedekIndirBtn");
-const yedekYukleBtn = document.getElementById("yedekYukleBtn");
-const yedekDosyaInput = document.getElementById("yedekDosyaInput");
-
-// JSON Olarak Dışa Aktar
+// --- 10. KESİN VE SAĞLAM VERİ YEDEKLEME (EXPORT / IMPORT) ---
 yedekIndirBtn.addEventListener("click", () => {
   if (!aktifKullanici) return;
 
@@ -884,41 +886,58 @@ yedekIndirBtn.addEventListener("click", () => {
   indirBaglanti.remove();
 });
 
-// JSON Dosyası Seçtir
 yedekYukleBtn.addEventListener("click", () => {
-  yedekDosyaInput.click();
+  if (yedekDosyaInput) {
+    yedekDosyaInput.value = ""; // Aynı dosya tekrar seçilebilsin
+    yedekDosyaInput.click();
+  }
 });
 
-// Dosyayı Oku ve İçeri Aktar
-yedekDosyaInput.addEventListener("change", (e) => {
-  const dosya = e.target.files[0];
-  if (!dosya) return;
+if (yedekDosyaInput) {
+  yedekDosyaInput.addEventListener("change", (e) => {
+    const dosya = e.target.files[0];
+    if (!dosya) return;
 
-  const okuyucu = new FileReader();
-  okuyucu.onload = (olay) => {
-    try {
-      const yuklenen = JSON.parse(olay.target.result);
-      if (yuklenen.etkinlikler && Array.isArray(yuklenen.etkinlikler)) {
-        etkinlikler = yuklenen.etkinlikler;
-        if (yuklenen.hesaplar) hesapKaydet(yuklenen.hesaplar);
-        herSeyiCiz();
-        konfetiVeKutlama();
-        alert("✨ Verilerin başarıyla geri yüklendi!");
-      } else {
-        alert("Geçersiz yedek dosyası formatı.");
+    const okuyucu = new FileReader();
+    okuyucu.onload = (olay) => {
+      try {
+        const yuklenen = JSON.parse(olay.target.result);
+        
+        // Veri bütünlüğü kontrolü
+        if (yuklenen && yuklenen.etkinlikler && Array.isArray(yuklenen.etkinlikler)) {
+          etkinlikler = yuklenen.etkinlikler;
+          
+          // 1. Kullanıcının cihaz deposuna doğrudan kaydet
+          kullaniciVerileriniKaydet();
+          
+          // 2. Varsa hesap bilgilerini de birleştir
+          if (yuklenen.hesaplar) {
+            const mevcutHesaplar = getHesaplar();
+            const birlestirilmis = { ...mevcutHesaplar, ...yuklenen.hesaplar };
+            hesapKaydet(birlestirilmis);
+          }
+
+          // 3. Ekranı baştan çiz ve kutla
+          herSeyiCiz();
+          konfetiVeKutlama();
+          alert("✨ Tüm verilerin ve planların başarıyla geri yüklendi!");
+        } else {
+          alert("⚠️ Hata: Seçilen dosya geçerli bir KaganStudio yedek dosyası değil.");
+        }
+      } catch (hata) {
+        alert("⚠️ Dosya açılırken hata oluştu: " + hata.message);
       }
-    } catch (hata) {
-      alert("Dosya okunurken bir hata oluştu: " + hata.message);
-    }
-  };
-  okuyucu.readAsText(dosya);
-});
-
-// Service Worker Kaydı (PWA Çevrimdışı Çalışma Desteği)
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(err => {
-      console.log("Service Worker kaydedilemedi:", err);
-    });
+    };
+    okuyucu.readAsText(dosya);
   });
+}
+
+// Başlangıç Ayarları
+const kayitliPastel = localStorage.getItem("kaganPlanner_pastelRenk") || "sade";
+pastelRenkUygula(kayitliPastel);
+temaUygula(localStorage.getItem("kaganPlannerTema") || "light");
+
+const acikOturum = localStorage.getItem("kaganPlanner_oturum");
+if (acikOturum) {
+  girisBasarili(acikOturum);
 }
