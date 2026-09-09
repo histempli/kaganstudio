@@ -1,13 +1,25 @@
-// --- 0. SUPABASE GÜVENLİ BAĞLANTI KONTROLÜ ---
-const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
+// --- DOĞRUDAN REST API MOTORU (KÜTÜPHANESİZ & KIRILMAZ) ---
+const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co/rest/v1";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
 
-let supabase = null;
-if (window.supabase && typeof window.supabase.createClient === "function") {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-  alert("⚠️ Supabase kütüphanesi yüklenemedi! Lütfen Brave Kalkanlarını (Brave Shields) bu site için kapatıp sayfayı yenileyin.");
-}
+const bulutIstek = async (tablo, metod = "GET", govde = null, params = "") => {
+  const basliklar = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+  };
+
+  const ayarlar = { method: metod, headers: basliklar };
+  if (govde) ayarlar.body = JSON.stringify(govde);
+
+  const yanit = await fetch(`${SUPABASE_URL}/${tablo}${params ? '?' + params : ''}`, ayarlar);
+  if (!yanit.ok) {
+    const hataMetni = await yanit.text();
+    throw new Error(`[${yanit.status}] ${hataMetni}`);
+  }
+  return await yanit.json();
+};
 
 // --- DOM ELEMANLARI ---
 const authEkrani = document.getElementById("authEkrani");
@@ -15,7 +27,6 @@ const anaUygulamaEkrani = document.getElementById("anaUygulamaEkrani");
 const sekmeGiris = document.getElementById("sekmeGiris");
 const sekmeKayit = document.getElementById("sekmeKayit");
 const authMesaj = document.getElementById("authMesaj");
-const authForm = document.getElementById("authForm");
 const kullaniciAdi = document.getElementById("kullaniciAdi");
 const kullaniciSifre = document.getElementById("kullaniciSifre");
 const authGonderBtn = document.getElementById("authGonderBtn");
@@ -47,7 +58,6 @@ const ilerlemeBari = document.getElementById("ilerlemeBari");
 const yuzdeMetin = document.getElementById("yuzdeMetin");
 const kutlamaKarti = document.getElementById("kutlamaKarti");
 
-// Çekmece & Modallar
 const cekmecArkaplan = document.getElementById("cekmecArkaplan");
 const detayCekmecesi = document.getElementById("detayCekmecesi");
 const cekmecKapatBtn = document.getElementById("cekmecKapatBtn");
@@ -127,14 +137,7 @@ function mesajGoster(metin, tur) {
   authMesaj.textContent = metin;
 }
 
-authForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  if (!supabase) {
-    mesajGoster("Supabase bağlantısı kurulamadı. Reklam engelleyiciyi kapatın.", "hata");
-    return;
-  }
-
+const authIslemiYap = async () => {
   const ad = kullaniciAdi.value.trim().toLowerCase();
   const sifre = kullaniciSifre.value.trim();
 
@@ -144,49 +147,30 @@ authForm.addEventListener("submit", async (e) => {
   }
 
   authGonderBtn.disabled = true;
-  authGonderBtn.textContent = "Bağlanıyor...";
+  authGonderBtn.textContent = "Buluta Bağlanıyor...";
 
   try {
     if (authModu === "kayit") {
-      const { data: mevcut, error: sorguHata } = await supabase
-        .from("profiller")
-        .select("kullanici_adi")
-        .eq("kullanici_adi", ad)
-        .maybeSingle();
-
-      if (sorguHata) throw new Error("Tablo bulunamadı veya SQL hatası: " + sorguHata.message);
-
-      if (mevcut) {
+      // Kullanıcı kontrolü
+      const mevcutlar = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${ad}&select=kullanici_adi`);
+      if (mevcutlar && mevcutlar.length > 0) {
         mesajGoster("Bu kullanıcı adı zaten alınmış!", "hata");
         return;
       }
 
-      const { error: ekleHata } = await supabase
-        .from("profiller")
-        .insert([{ kullanici_adi: ad, sifre: sifre, calisilan_dakika: 0 }]);
-
-      if (ekleHata) throw new Error(ekleHata.message);
-
-      mesajGoster("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.", "basari");
-      setTimeout(() => {
-        sekmeGiris.click();
-        kullaniciSifre.value = "";
-      }, 1200);
+      // Yeni profil ekle
+      await bulutIstek("profiller", "POST", { kullanici_adi: ad, sifre: sifre, calisilan_dakika: 0 });
+      mesajGoster("Hesap başarıyla açıldı! Giriş yapılıyor...", "basari");
+      setTimeout(() => girisBasarili(ad), 1000);
     } else {
-      const { data: profil, error: girisHata } = await supabase
-        .from("profiller")
-        .select("*")
-        .eq("kullanici_adi", ad)
-        .maybeSingle();
-
-      if (girisHata) throw new Error("Giriş sorgu hatası: " + girisHata.message);
-
-      if (!profil) {
-        mesajGoster("Kullanıcı bulunamadı! Önce kayıt olun.", "hata");
+      // Giriş doğrulaması
+      const profiller = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${ad}&select=*`);
+      if (!profiller || profiller.length === 0) {
+        mesajGoster("Kullanıcı bulunamadı! Önce 'Kayıt Ol' sekmesinden hesap açın.", "hata");
         return;
       }
 
-      if (profil.sifre !== sifre) {
+      if (profiller[0].sifre !== sifre) {
         mesajGoster("Hatalı şifre girdiniz!", "hata");
         return;
       }
@@ -194,13 +178,16 @@ authForm.addEventListener("submit", async (e) => {
       girisBasarili(ad);
     }
   } catch (err) {
-    mesajGoster("Hata: " + err.message, "hata");
-    console.error("Giriş/Kayıt Detay Hatası:", err);
+    mesajGoster("Bulut Hatası: " + err.message, "hata");
+    alert("Bağlantı Hatası: " + err.message);
   } finally {
     authGonderBtn.disabled = false;
     authGonderBtn.textContent = authModu === "giris" ? "Giriş Yap" : "Yeni Hesap Oluştur";
   }
-});
+};
+
+authGonderBtn.addEventListener("click", authIslemiYap);
+kullaniciSifre.addEventListener("keydown", (e) => { if (e.key === "Enter") authIslemiYap(); });
 
 function girisBasarili(ad) {
   aktifKullanici = ad;
@@ -227,83 +214,81 @@ cikisYapBtn.addEventListener("click", () => {
   authEkrani.classList.remove("gizli");
 });
 
-// --- 2. BULUT VERİ SENKRONİZASYONU ---
+// --- 2. BULUT VERİ İŞLEMLERİ ---
 async function buluttanGorevleriYukle() {
-  if (!aktifKullanici || !supabase) return;
+  if (!aktifKullanici) return;
 
-  const { data, error } = await supabase
-    .from("gorevler")
-    .select("*")
-    .eq("kullanici_adi", aktifKullanici)
-    .order("olusturuldu", { ascending: false });
-
-  if (error) {
-    console.error("Görevler çekilemedi:", error);
-    return;
+  try {
+    const data = await bulutIstek("gorevler", "GET", null, `kullanici_adi=eq.${aktifKullanici}&order=olusturuldu.desc`);
+    etkinlikler = (data || []).map(g => ({
+      id: g.id,
+      baslik: g.baslik,
+      tarih: g.tarih,
+      saat: g.saat || "",
+      oncelik: g.oncelik || "orta",
+      kategori: g.kategori || "Genel",
+      tamamlandi: g.tamamlandi || false,
+      notlar: g.notlar || "",
+      altGorevler: g.alt_gorevler || []
+    }));
+    herSeyiCiz();
+  } catch (err) {
+    console.error("Görev yükleme hatası:", err);
   }
-
-  etkinlikler = (data || []).map(g => ({
-    id: g.id,
-    baslik: g.baslik,
-    tarih: g.tarih,
-    saat: g.saat || "",
-    oncelik: g.oncelik || "orta",
-    kategori: g.kategori || "Genel",
-    tamamlandi: g.tamamlandi || false,
-    notlar: g.notlar || "",
-    altGorevler: g.alt_gorevler || []
-  }));
-
-  herSeyiCiz();
 }
 
 async function bulutaGorevEkle(gorev) {
-  if (!supabase) return;
-  await supabase.from("gorevler").insert([{
-    id: gorev.id,
-    kullanici_adi: aktifKullanici,
-    baslik: gorev.baslik,
-    tarih: gorev.tarih,
-    saat: gorev.saat,
-    oncelik: gorev.oncelik,
-    kategori: gorev.kategori,
-    tamamlandi: gorev.tamamlandi,
-    notlar: gorev.notlar,
-    alt_gorevler: gorev.altGorevler
-  }]);
+  try {
+    await bulutIstek("gorevler", "POST", {
+      id: gorev.id,
+      kullanici_adi: aktifKullanici,
+      baslik: gorev.baslik,
+      tarih: gorev.tarih,
+      saat: gorev.saat,
+      oncelik: gorev.oncelik,
+      kategori: gorev.kategori,
+      tamamlandi: gorev.tamamlandi,
+      notlar: gorev.notlar,
+      alt_gorevler: gorev.altGorevler
+    });
+  } catch (err) {
+    console.error("Görev ekleme hatası:", err);
+  }
 }
 
 async function buluttaGorevGuncelle(id, veriler) {
-  if (!supabase) return;
-  const guncelle = {};
-  if (veriler.tamamlandi !== undefined) guncelle.tamamlandi = veriler.tamamlandi;
-  if (veriler.notlar !== undefined) guncelle.notlar = veriler.notlar;
-  if (veriler.altGorevler !== undefined) guncelle.alt_gorevler = veriler.altGorevler;
+  try {
+    const guncelle = {};
+    if (veriler.tamamlandi !== undefined) guncelle.tamamlandi = veriler.tamamlandi;
+    if (veriler.notlar !== undefined) guncelle.notlar = veriler.notlar;
+    if (veriler.altGorevler !== undefined) guncelle.alt_gorevler = veriler.altGorevler;
 
-  await supabase.from("gorevler").update(guncelle).eq("id", id);
+    await bulutIstek("gorevler", "PATCH", guncelle, `id=eq.${id}`);
+  } catch (err) {
+    console.error("Görev güncelleme hatası:", err);
+  }
 }
 
 async function buluttanGorevSil(id) {
-  if (!supabase) return;
-  await supabase.from("gorevler").delete().eq("id", id);
+  try {
+    await bulutIstek("gorevler", "DELETE", null, `id=eq.${id}`);
+  } catch (err) {
+    console.error("Görev silme hatası:", err);
+  }
 }
 
 async function bulutaDakikaEkle(dk) {
-  if (!aktifKullanici || !supabase) return;
-  const { data } = await supabase
-    .from("profiller")
-    .select("calisilan_dakika")
-    .eq("kullanici_adi", aktifKullanici)
-    .single();
-
-  const yeni = ((data && data.calisilan_dakika) || 0) + dk;
-  await supabase
-    .from("profiller")
-    .update({ calisilan_dakika: yeni })
-    .eq("kullanici_adi", aktifKullanici);
+  if (!aktifKullanici) return;
+  try {
+    const profiller = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${aktifKullanici}&select=calisilan_dakika`);
+    const eski = (profiller && profiller[0] && profiller[0].calisilan_dakika) || 0;
+    await bulutIstek("profiller", "PATCH", { calisilan_dakika: eski + dk }, `kullanici_adi=eq.${aktifKullanici}`);
+  } catch (err) {
+    console.error("Dakika güncelleme hatası:", err);
+  }
 }
 
-// --- 3. ÇİZİM MOTORU ---
+// --- 3. ÇİZİM & GÖREV MOTORU ---
 let gecerliTarih = new Date();
 const gercekBugunStr = `${gecerliTarih.getFullYear()}-${String(gecerliTarih.getMonth() + 1).padStart(2, '0')}-${String(gecerliTarih.getDate()).padStart(2, '0')}`;
 if (etkinlikTarih) etkinlikTarih.value = gercekBugunStr;
@@ -648,38 +633,32 @@ toplulukKapatBtn.addEventListener("click", () => {
 });
 
 async function toplulukTablosunuCiz() {
-  if (!supabase) return;
   toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--yazi-ikincil);padding:10px;">Buluttan yükleniyor...</div>`;
 
-  const { data: profiller, error } = await supabase
-    .from("profiller")
-    .select("kullanici_adi, calisilan_dakika")
-    .order("calisilan_dakika", { ascending: false });
+  try {
+    const profiller = await bulutIstek("profiller", "GET", null, "select=kullanici_adi,calisilan_dakika&order=calisilan_dakika.desc");
+    toplulukListesi.innerHTML = "";
+    profiller.forEach((kisi, sira) => {
+      const saat = ((kisi.calisilan_dakika || 0) / 60).toFixed(1);
+      const satir = document.createElement("div");
+      satir.className = "topluluk-satir";
+      const benMiyim = kisi.kullanici_adi === aktifKullanici ? " (Sen)" : "";
 
-  if (error || !profiller) {
-    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--silme-hover);padding:10px;">Liste alınamadı: ${error ? error.message : ''}</div>`;
-    return;
+      satir.innerHTML = `
+        <div class="topluluk-sol">
+          <span>#${sira + 1}</span>
+          <span>${kisi.kullanici_adi}${benMiyim}</span>
+        </div>
+        <div class="topluluk-sag">
+          ⏱️ ${kisi.calisilan_dakika || 0} dk (${saat} sa)
+        </div>
+      `;
+
+      toplulukListesi.appendChild(satir);
+    });
+  } catch (err) {
+    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--silme-hover);padding:10px;">Liste alınamadı: ${err.message}</div>`;
   }
-
-  toplulukListesi.innerHTML = "";
-  profiller.forEach((kisi, sira) => {
-    const saat = ((kisi.calisilan_dakika || 0) / 60).toFixed(1);
-    const satir = document.createElement("div");
-    satir.className = "topluluk-satir";
-    const benMiyim = kisi.kullanici_adi === aktifKullanici ? " (Sen)" : "";
-
-    satir.innerHTML = `
-      <div class="topluluk-sol">
-        <span>#${sira + 1}</span>
-        <span>${kisi.kullanici_adi}${benMiyim}</span>
-      </div>
-      <div class="topluluk-sag">
-        ⏱️ ${kisi.calisilan_dakika || 0} dk (${saat} sa)
-      </div>
-    `;
-
-    toplulukListesi.appendChild(satir);
-  });
 }
 
 // --- 7. YENİ ETKİNLİK EKLEME ---
@@ -710,7 +689,6 @@ async function yeniEtkinlikEkle() {
 kaydetBtn.addEventListener("click", yeniEtkinlikEkle);
 etkinlikBaslik.addEventListener("keydown", (e) => { if (e.key === "Enter") yeniEtkinlikEkle(); });
 
-// Sekmeler
 sekmeButonlari.forEach(btn => {
   btn.addEventListener("click", () => {
     sekmeButonlari.forEach(b => b.classList.remove("aktif"));
@@ -816,7 +794,7 @@ temaBtn.addEventListener("click", () => {
   temaUygula(aktif);
 });
 
-// --- 9. ZEN MODU & HQ SESLER ---
+// --- 9. ZEN MODU & GERÇEK HD ORTAM SESLERİ ---
 zenModuBtn.addEventListener("click", () => {
   document.body.classList.toggle("zen-aktif");
   const aktifMi = document.body.classList.contains("zen-aktif");
