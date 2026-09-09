@@ -1,11 +1,16 @@
-// --- DOĞRUDAN REST API MOTORU (KÜTÜPHANESİZ & GÜVENLİ) ---
-const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co/rest/v1";
+// --- SUPABASE REST & AUTH MOTORU ---
+const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co";
+const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1`;
+const SUPABASE_AUTH_URL = `${SUPABASE_URL}/auth/v1`;
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
+
+let aktifToken = localStorage.getItem("kaganPlanner_token") || null;
+let aktifUserId = localStorage.getItem("kaganPlanner_uid") || null;
 
 const bulutIstek = async (tablo, metod = "GET", govde = null, params = "") => {
   const basliklar = {
     "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${SUPABASE_KEY}`,
+    "Authorization": `Bearer ${aktifToken || SUPABASE_KEY}`,
     "Content-Type": "application/json",
     "Prefer": "return=representation"
   };
@@ -13,12 +18,13 @@ const bulutIstek = async (tablo, metod = "GET", govde = null, params = "") => {
   const ayarlar = { method: metod, headers: basliklar };
   if (govde) ayarlar.body = JSON.stringify(govde);
 
-  const yanit = await fetch(`${SUPABASE_URL}/${tablo}${params ? '?' + params : ''}`, ayarlar);
+  const yanit = await fetch(`${SUPABASE_REST_URL}/${tablo}${params ? '?' + params : ''}`, ayarlar);
   if (!yanit.ok) {
     const hataMetni = await yanit.text();
     throw new Error(`[${yanit.status}] ${hataMetni}`);
   }
-  return await yanit.json();
+  const text = await yanit.text();
+  return text ? JSON.parse(text) : null;
 };
 
 // --- DOM ELEMANLARI ---
@@ -111,7 +117,7 @@ let aktifKullanici = null;
 let etkinlikler = [];
 let aktifSeciliEtkinlikId = null;
 
-// Şifre Güvenlik Kuralı Kontrolü (En az 8 karakter, 1 büyük harf, 1 rakam)
+// Şifre Güvenlik Kuralı (En az 8 karakter, 1 büyük harf, 1 rakam)
 function sifreGuvenliMi(sifre) {
   const regex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
   return regex.test(sifre);
@@ -154,11 +160,12 @@ const authIslemiYap = async () => {
   }
 
   authGonderBtn.disabled = true;
-  authGonderBtn.textContent = "Buluta Bağlanıyor...";
+  authGonderBtn.textContent = "İşleniyor...";
 
   try {
+    const sahteEmail = `${ad}@kaganstudio.local`;
+
     if (authModu === "kayit") {
-      // Şifre güvenlik kuralı kontrolü
       if (!sifreGuvenliMi(sifre)) {
         mesajGoster("Şifre en az 8 karakter olmalı, en az 1 büyük harf ve 1 rakam içermelidir!", "hata");
         authGonderBtn.disabled = false;
@@ -166,34 +173,40 @@ const authIslemiYap = async () => {
         return;
       }
 
-      // Kullanıcı kontrolü
-      const mevcutlar = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${ad}&select=kullanici_adi`);
-      if (mevcutlar && mevcutlar.length > 0) {
-        mesajGoster("Bu kullanıcı adı zaten alınmış!", "hata");
-        return;
-      }
+      // Supabase Auth SignUp
+      const res = await fetch(`${SUPABASE_AUTH_URL}/signup`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sahteEmail, password: sifre })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.msg || data.error_description || "Kayıt başarısız.");
 
-      // Yeni profil ekle
-      await bulutIstek("profiller", "POST", { kullanici_adi: ad, sifre: sifre, calisilan_dakika: 0 });
+      aktifToken = data.access_token;
+      aktifUserId = data.user.id;
+
+      // Profiller tablosuna kaydet
+      await bulutIstek("kullanici_profiller", "POST", { id: aktifUserId, kullanici_adi: ad, calisilan_dakika: 0 });
+
       mesajGoster("Hesap başarıyla açıldı! Giriş yapılıyor...", "basari");
-      setTimeout(() => girisBasarili(ad), 1000);
+      setTimeout(() => girisBasarili(ad, aktifToken, aktifUserId), 1000);
     } else {
-      // Giriş doğrulaması
-      const profiller = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${ad}&select=*`);
-      if (!profiller || profiller.length === 0) {
-        mesajGoster("Kullanıcı bulunamadı! Önce 'Kayıt Ol' sekmesinden hesap açın.", "hata");
-        return;
-      }
+      // Supabase Auth SignIn
+      const res = await fetch(`${SUPABASE_AUTH_URL}/token?grant_type=password`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sahteEmail, password: sifre })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error_description || data.msg || "Kullanıcı adı veya şifre hatalı.");
 
-      if (profiller[0].sifre !== sifre) {
-        mesajGoster("Hatalı şifre girdiniz!", "hata");
-        return;
-      }
+      aktifToken = data.access_token;
+      aktifUserId = data.user.id;
 
-      girisBasarili(ad);
+      girisBasarili(ad, aktifToken, aktifUserId);
     }
   } catch (err) {
-    mesajGoster("Bulut Hatası: " + err.message, "hata");
+    mesajGoster("Hata: " + err.message, "hata");
   } finally {
     authGonderBtn.disabled = false;
     authGonderBtn.textContent = authModu === "giris" ? "Giriş Yap" : "Yeni Hesap Oluştur";
@@ -203,9 +216,11 @@ const authIslemiYap = async () => {
 authGonderBtn.addEventListener("click", authIslemiYap);
 kullaniciSifre.addEventListener("keydown", (e) => { if (e.key === "Enter") authIslemiYap(); });
 
-function girisBasarili(ad) {
+function girisBasarili(ad, token, uid) {
   aktifKullanici = ad;
   localStorage.setItem("kaganPlanner_oturum", ad);
+  localStorage.setItem("kaganPlanner_token", token);
+  localStorage.setItem("kaganPlanner_uid", uid);
 
   authEkrani.classList.add("gizli");
   anaUygulamaEkrani.classList.remove("gizli");
@@ -214,11 +229,9 @@ function girisBasarili(ad) {
   buluttanGorevleriYukle();
 }
 
-// Şifre Değiştirme Butonu Dinleyicisi
+// Şifre Değiştirme
 if (sifreDegistirBtn) {
   sifreDegistirBtn.addEventListener("click", async () => {
-    if (!aktifKullanici) return;
-
     const yeniSifre = prompt("Yeni şifrenizi girin (En az 8 karakter, 1 büyük harf, 1 rakam):");
     if (!yeniSifre) return;
 
@@ -228,17 +241,26 @@ if (sifreDegistirBtn) {
     }
 
     try {
-      await bulutIstek("profiller", "PATCH", { sifre: yeniSifre }, `kullanici_adi=eq.${aktifKullanici}`);
-      alert("✅ Şifreniz başarıyla güncellendi!");
+      const res = await fetch(`${SUPABASE_AUTH_URL}/user`, {
+        method: "PUT",
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${aktifToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ password: yeniSifre })
+      });
+      if (!res.ok) throw new Error("Şifre güncellenemedi.");
+      alert("✅ Şifreniz başarıyla değiştirildi!");
     } catch (err) {
-      alert("Şifre güncellenemedi: " + err.message);
+      alert("Hata: " + err.message);
     }
   });
 }
 
 cikisYapBtn.addEventListener("click", () => {
   localStorage.removeItem("kaganPlanner_oturum");
+  localStorage.removeItem("kaganPlanner_token");
+  localStorage.removeItem("kaganPlanner_uid");
   aktifKullanici = null;
+  aktifToken = null;
+  aktifUserId = null;
   etkinlikler = [];
   cekmeceyiKapat();
 
@@ -250,12 +272,12 @@ cikisYapBtn.addEventListener("click", () => {
   authEkrani.classList.remove("gizli");
 });
 
-// --- 2. BULUT VERİ İŞLEMLERİ ---
+// --- 2. GÖREV VE BULUT İŞLEMLERİ ---
 async function buluttanGorevleriYukle() {
-  if (!aktifKullanici) return;
+  if (!aktifKullanici || !aktifUserId) return;
 
   try {
-    const data = await bulutIstek("gorevler", "GET", null, `kullanici_adi=eq.${aktifKullanici}&order=olusturuldu.desc`);
+    const data = await bulutIstek("gorevler_auth", "GET", null, `user_id=eq.${aktifUserId}&order=olusturuldu.desc`);
     etkinlikler = (data || []).map(g => ({
       id: g.id,
       baslik: g.baslik,
@@ -275,8 +297,9 @@ async function buluttanGorevleriYukle() {
 
 async function bulutaGorevEkle(gorev) {
   try {
-    await bulutIstek("gorevler", "POST", {
+    await bulutIstek("gorevler_auth", "POST", {
       id: gorev.id,
+      user_id: aktifUserId,
       kullanici_adi: aktifKullanici,
       baslik: gorev.baslik,
       tarih: gorev.tarih,
@@ -299,7 +322,7 @@ async function buluttaGorevGuncelle(id, veriler) {
     if (veriler.notlar !== undefined) guncelle.notlar = veriler.notlar;
     if (veriler.altGorevler !== undefined) guncelle.alt_gorevler = veriler.altGorevler;
 
-    await bulutIstek("gorevler", "PATCH", guncelle, `id=eq.${id}`);
+    await bulutIstek("gorevler_auth", "PATCH", guncelle, `id=eq.${id}&user_id=eq.${aktifUserId}`);
   } catch (err) {
     console.error("Görev güncelleme hatası:", err);
   }
@@ -307,18 +330,18 @@ async function buluttaGorevGuncelle(id, veriler) {
 
 async function buluttanGorevSil(id) {
   try {
-    await bulutIstek("gorevler", "DELETE", null, `id=eq.${id}`);
+    await bulutIstek("gorevler_auth", "DELETE", null, `id=eq.${id}&user_id=eq.${aktifUserId}`);
   } catch (err) {
     console.error("Görev silme hatası:", err);
   }
 }
 
 async function bulutaDakikaEkle(dk) {
-  if (!aktifKullanici) return;
+  if (!aktifKullanici || !aktifUserId) return;
   try {
-    const profiller = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${aktifKullanici}&select=calisilan_dakika`);
+    const profiller = await bulutIstek("kullanici_profiller", "GET", null, `id=eq.${aktifUserId}&select=calisilan_dakika`);
     const eski = (profiller && profiller[0] && profiller[0].calisilan_dakika) || 0;
-    await bulutIstek("profiller", "PATCH", { calisilan_dakika: eski + dk }, `kullanici_adi=eq.${aktifKullanici}`);
+    await bulutIstek("kullanici_profiller", "PATCH", { calisilan_dakika: eski + dk }, `id=eq.${aktifUserId}`);
   } catch (err) {
     console.error("Dakika güncelleme hatası:", err);
   }
@@ -672,7 +695,7 @@ async function toplulukTablosunuCiz() {
   toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--yazi-ikincil);padding:10px;">Buluttan yükleniyor...</div>`;
 
   try {
-    const profiller = await bulutIstek("profiller", "GET", null, "select=kullanici_adi,calisilan_dakika&order=calisilan_dakika.desc");
+    const profiller = await bulutIstek("kullanici_profiller", "GET", null, "select=kullanici_adi,calisilan_dakika&order=calisilan_dakika.desc");
     toplulukListesi.innerHTML = "";
     profiller.forEach((kisi, sira) => {
       const saat = ((kisi.calisilan_dakika || 0) / 60).toFixed(1);
@@ -954,6 +977,15 @@ pastelRenkUygula(localStorage.getItem("kaganPlanner_pastelRenk") || "sade");
 temaUygula(localStorage.getItem("kaganPlannerTema") || "light");
 
 const acikOturum = localStorage.getItem("kaganPlanner_oturum");
-if (acikOturum) {
-  girisBasarili(acikOturum);
+const acikToken = localStorage.getItem("kaganPlanner_token");
+const acikUid = localStorage.getItem("kaganPlanner_uid");
+if (acikOturum && acikToken && acikUid) {
+  aktifKullanici = acikOturum;
+  aktifToken = acikToken;
+  aktifUserId = acikUid;
+
+  authEkrani.classList.add("gizli");
+  anaUygulamaEkrani.classList.remove("gizli");
+  profilIsim.textContent = acikOturum;
+  buluttanGorevleriYukle();
 }
