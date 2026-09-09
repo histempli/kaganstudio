@@ -1,3 +1,23 @@
+/* Mobil ve esnek görünüm düzeltmesi */
+body {
+  zoom: 1;
+  -webkit-text-size-adjust: 100%;
+}
+
+.notion-kapsayici {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.ust-bar {
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
