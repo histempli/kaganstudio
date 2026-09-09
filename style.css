@@ -1442,3 +1442,16 @@ body.zen-aktif #zenModuBtn {
   background-color: var(--kenarlik);
   margin: 4px 0;
 }
+
+/* Mobilde Ayarlar Menüsünü Ekranı Ortalayacak Şekilde Ayarla */
+@media (max-width: 768px) {
+  .ayar-acilir-menu {
+    position: fixed;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 340px;
+    right: auto;
+  }
+}
