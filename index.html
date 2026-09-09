@@ -70,11 +70,8 @@
         <button id="pomodoroToggleBtn" class="yardimci-btn pomodoro-btn">🍅 25:00</button>
 
         <!-- YEDEKLEME BUTONLARI -->
-        <button id="yedekIndirBtn" class="yardimci-btn" title="Verilerini Dosya Olarak İndir">💾 Yedekle</button>
-      <label for="yedekDosyaInput" class="yardimci-btn yedek-etiket-btn" title="Yedek Dosyası Yükle">
-  📥 Geri Yükle
-  <input type="file" id="yedekDosyaInput" accept=".json,application/json">
-</label>
+        <button id="yedekIndirBtn" class="yardimci-btn" title="Verileri İndir">💾 Yedekle</button>
+        <button id="yedekModalAcBtn" class="yardimci-btn" title="Yedek Geri Yükle">📥 Geri Yükle</button>
 
         <!-- BİLDİRİM İZNİ -->
         <button id="bildirimIzinBtn" class="yardimci-btn" title="Bildirimleri Aç">🔔 İzin</button>
@@ -249,6 +246,25 @@
       </div>
       <p class="topluluk-alt-bilgi">Birlikte çalışan topluluk üyelerinin odak süreleri</p>
       <div id="toplulukListesi" class="topluluk-listesi"></div>
+    </div>
+  </div>
+
+  <!-- GERİ YÜKLEME MODALI -->
+  <div id="yedekModali" class="modal-arkaplan gizli">
+    <div class="modal-kart" style="max-width: 480px;">
+      <div class="modal-ust-bar">
+        <h3>📥 Verileri Geri Yükle</h3>
+        <button id="yedekModalKapatBtn" class="cekmec-kapat">✕</button>
+      </div>
+      <p style="font-size:12px; color:var(--yazi-ikincil); margin-bottom:12px;">
+        İndirdiğin <code>.json</code> dosyasını seçebilir ya da dosyanın içindeki metni doğrudan aşağıdaki alana yapıştırabilirsin:
+      </p>
+      
+      <input type="file" id="yedekDosyaSec" accept=".json,application/json" style="margin-bottom: 12px; font-size: 13px; width: 100%;">
+      
+      <textarea id="yedekMetinAlani" placeholder='{"kullanici": "...", "etkinlikler": [...]}' style="width:100%; height:120px; background:var(--bg-kart); border:1px solid var(--kenarlik); border-radius:8px; padding:10px; color:var(--yazi-ana); font-family:monospace; font-size:12px; outline:none; resize:none; margin-bottom:12px;"></textarea>
+      
+      <button id="yedegiUygulaBtn" class="auth-ana-btn" style="width:100%;">Verileri İçeri Aktar ve Yenile</button>
     </div>
   </div>
 
