@@ -37,7 +37,7 @@ const ilerlemeBari = document.getElementById("ilerlemeBari");
 const yuzdeMetin = document.getElementById("yuzdeMetin");
 const kutlamaKarti = document.getElementById("kutlamaKarti");
 
-// Çekmece Elemanları
+// Çekmece
 const cekmecArkaplan = document.getElementById("cekmecArkaplan");
 const detayCekmecesi = document.getElementById("detayCekmecesi");
 const cekmecKapatBtn = document.getElementById("cekmecKapatBtn");
@@ -51,7 +51,7 @@ const altGorevEkleBtn = document.getElementById("altGorevEkleBtn");
 const altGorevListesi = document.getElementById("altGorevListesi");
 const altGorevSayac = document.getElementById("altGorevSayac");
 
-// Pomodoro Elemanları
+// Pomodoro
 const pomodoroToggleBtn = document.getElementById("pomodoroToggleBtn");
 const pomodoroKarti = document.getElementById("pomodoroKarti");
 const pomodoroKapat = document.getElementById("pomodoroKapat");
@@ -61,7 +61,7 @@ const pomoSureAyarlaBtn = document.getElementById("pomoSureAyarlaBtn");
 const pomoBaslatBtn = document.getElementById("pomoBaslatBtn");
 const pomoSifirlaBtn = document.getElementById("pomoSifirlaBtn");
 
-// Topluluk & Farkındalık Elemanları
+// Topluluk & Farkındalık
 const toplulukBtn = document.getElementById("toplulukBtn");
 const uyariModali = document.getElementById("uyariModali");
 const uyariOnaylaBtn = document.getElementById("uyariOnaylaBtn");
@@ -79,6 +79,10 @@ const alarmKapatBtn = document.getElementById("alarmKapatBtn");
 const temaBtn = document.getElementById("temaBtn");
 const temaIkon = document.getElementById("temaIkon");
 const renkNoktalari = document.querySelectorAll(".renk-noktasi");
+
+// Zen & Ortam Sesleri
+const zenModuBtn = document.getElementById("zenModuBtn");
+const ortamSesiSecim = document.getElementById("ortamSesiSecim");
 
 // --- 1. AUTH SİSTEMİ ---
 let authModu = "giris";
@@ -203,7 +207,7 @@ function kullaniciVerileriniYukle() {
         notlar: "Göreve tıklayarak notlar ve alt görevler ekleyebilirsin.",
         altGorevler: [
           { id: 101, metin: "Alt görevleri dene", tamamlandi: true },
-          { id: 102, metin: "Pastel ve sade temayı incele", tamamlandi: false }
+          { id: 102, metin: "Pastel renkleri ve Zen modunu keşfet", tamamlandi: false }
         ]
       }
     ];
@@ -227,7 +231,7 @@ function kullaniciyaDakikaEkle(dk) {
   }
 }
 
-// --- 3. TARİH VE TAKVİM DURUMLARI ---
+// --- 3. TARİH VE TAKVİM MOTORU ---
 let gecerliTarih = new Date();
 const gercekBugunStr = `${gecerliTarih.getFullYear()}-${String(gecerliTarih.getMonth() + 1).padStart(2, '0')}-${String(gecerliTarih.getDate()).padStart(2, '0')}`;
 if (etkinlikTarih) etkinlikTarih.value = gercekBugunStr;
@@ -239,7 +243,6 @@ seciliHaftaBasi.setDate(seciliHaftaBasi.getDate() - gunFarki);
 let seciliAy = gecerliTarih.getMonth();
 let seciliYil = gecerliTarih.getFullYear();
 
-// --- 4. ÇİZİM FONKSİYONLARI ---
 function herSeyiCiz() {
   listeCiz();
   haftalikCiz();
@@ -255,7 +258,7 @@ function altGorevRozetiUret(altlar, mini = false) {
   return `<span class="alt-gorev-rozet ${hepsi ? 'tamami-bitti' : ''} ${mini ? 'mini' : ''}">☑ ${biten}/${altlar.length}</span>`;
 }
 
-// 4A. Liste
+// 3A. Liste
 function listeCiz() {
   listeKapsayici.innerHTML = "";
   etkinlikler.forEach(e => {
@@ -307,7 +310,7 @@ function listeCiz() {
   });
 }
 
-// 4B. Haftalık Görünüm
+// 3B. Haftalık
 const gunAdlari = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 function haftalikCiz() {
   haftalikGrid.innerHTML = "";
@@ -349,7 +352,7 @@ sonrakiHaftaBtn.addEventListener("click", () => {
   haftalikCiz();
 });
 
-// 4C. Aylık Görünüm
+// 3C. Aylık
 function aylikCiz() {
   aylikGrid.innerHTML = "";
   const ayGosterimTarihi = new Date(seciliYil, seciliAy, 1);
@@ -396,7 +399,7 @@ sonrakiAyBtn.addEventListener("click", () => {
   aylikCiz();
 });
 
-// --- 5. DETAY ÇEKMECESİ & ALT GÖREV MOTORU ---
+// --- 4. DETAY ÇEKMECESİ & ALT GÖREVLER ---
 function cekmeceyiAc(id) {
   const e = etkinlikler.find(item => item.id === id);
   if (!e) return;
@@ -505,7 +508,7 @@ altGorevInput.addEventListener("keydown", (ev) => {
   if (ev.key === "Enter") yeniAltGorevEkle();
 });
 
-// --- 6. AYARLANABİLİR POMODORO ---
+// --- 5. POMODORO ---
 let pomoDakika = 25;
 let pomoKalan = pomoDakika * 60;
 let pomoZamanlayici = null;
@@ -559,7 +562,7 @@ function pomoBaslatDurdur() {
         kullaniciyaDakikaEkle(pomoDakika);
 
         konfetiVeKutlama();
-        alarmTetikle("🍅 Pomodoro Süresi Doldu!", `Tebrikler! ${pomoDakika} dakikalık odak seansını başarıyla tamamladın.`);
+        alarmTetikle("🍅 Pomodoro Süresi Doldu!", `Tebrikler! ${pomoDakika} dakikalık odak seansını tamamladın.`);
         pomoSifirla();
       }
     }, 1000);
@@ -577,7 +580,7 @@ function pomoSifirla() {
 pomoBaslatBtn.addEventListener("click", pomoBaslatDurdur);
 pomoSifirlaBtn.addEventListener("click", pomoSifirla);
 
-// --- 7. TOPLULUK & FARKINDALIK MODALI ---
+// --- 6. TOPLULUK & FARKINDALIK ---
 toplulukBtn.addEventListener("click", () => {
   uyariModali.classList.remove("gizli");
 });
@@ -632,7 +635,7 @@ function toplulukTablosunuCiz() {
   });
 }
 
-// --- 8. YENİ ETKİNLİK EKLEME ---
+// --- 7. YENİ ETKİNLİK EKLEME ---
 function yeniEtkinlikEkle() {
   const baslik = etkinlikBaslik.value.trim();
   if (!baslik) return;
@@ -768,7 +771,7 @@ setInterval(() => {
   });
 }, 10000);
 
-// --- 9. TEMA MOTORU ---
+// --- 8. TEMA MOTORU ---
 function pastelRenkUygula(renk) {
   document.body.setAttribute("data-pastel", renk);
   localStorage.setItem("kaganPlanner_pastelRenk", renk);
@@ -804,7 +807,65 @@ temaBtn.addEventListener("click", () => {
   temaUygula(aktif);
 });
 
-// Başlangıç
+// --- 9. ZEN MODU & ORTAM SESLERİ ---
+zenModuBtn.addEventListener("click", () => {
+  document.body.classList.toggle("zen-aktif");
+  const aktifMi = document.body.classList.contains("zen-aktif");
+  zenModuBtn.textContent = aktifMi ? "🔔 Çıkış" : "🔕 Zen";
+  if (aktifMi && pomodoroKarti.classList.contains("gizli")) {
+    pomodoroKarti.classList.remove("gizli");
+  }
+});
+
+let sesCtx = null;
+let sesDugumu = null;
+
+function sesUret(tur) {
+  if (sesCtx) {
+    sesCtx.close();
+    sesCtx = null;
+  }
+  if (tur === "kapali") return;
+
+  sesCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const bufferSize = sesCtx.sampleRate * 2;
+  const buffer = sesCtx.createBuffer(1, bufferSize, sesCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  let sonDeger = 0;
+  for (let i = 0; i < bufferSize; i++) {
+    const beyaz = Math.random() * 2 - 1;
+    if (tur === "yagmur") {
+      sonDeger = (sonDeger + 0.02 * beyaz) / 1.02;
+      data[i] = sonDeger * 3.5;
+    } else if (tur === "somine") {
+      const citirti = Math.random() > 0.992 ? (Math.random() * 2 - 1) * 0.8 : 0;
+      sonDeger = (sonDeger + 0.04 * beyaz) / 1.04;
+      data[i] = sonDeger * 1.5 + citirti;
+    } else {
+      sonDeger = (sonDeger + 0.01 * beyaz) / 1.01;
+      data[i] = sonDeger * 4.5;
+    }
+  }
+
+  const kaynak = sesCtx.createBufferSource();
+  kaynak.buffer = buffer;
+  kaynak.loop = true;
+
+  const kazanc = sesCtx.createGain();
+  kazanc.gain.value = 0.15;
+
+  kaynak.connect(kazanc);
+  kazanc.connect(sesCtx.destination);
+  kaynak.start();
+  sesDugumu = kaynak;
+}
+
+ortamSesiSecim.addEventListener("change", (e) => {
+  sesUret(e.target.value);
+});
+
+// Başlangıç Ayarları
 const kayitliPastel = localStorage.getItem("kaganPlanner_pastelRenk") || "sade";
 pastelRenkUygula(kayitliPastel);
 temaUygula(localStorage.getItem("kaganPlannerTema") || "light");
