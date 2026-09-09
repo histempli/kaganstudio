@@ -19,6 +19,7 @@
   --bg-gorsel: none;
 }
 
+/* TEMA SEÇENEKLERİ */
 body[data-pastel="sade"] {
   --vurgu: #2eaadc;
   --bg-gorsel: none;
@@ -46,6 +47,7 @@ body[data-pastel="mor"] {
   --bg-gorsel: url("https://images.unsplash.com/photo-1511497584788-87676104235f?auto=format&fit=crop&w=1920&q=80");
 }
 
+/* KOYU MOD */
 body.dark-mode {
   --bg-ana: #191919;
   --bg-kart: rgba(32, 32, 32, 0.88);
@@ -100,7 +102,7 @@ body {
   display: none !important;
 }
 
-/* ---------------- GİRİŞ & KAYIT ---------------- */
+/* AUTH EKRANI */
 .auth-kapsayici {
   width: 100%;
   max-width: 440px;
@@ -234,7 +236,7 @@ body {
   margin-top: 8px;
 }
 
-/* ---------------- ANA ÇALIŞMA ALANI ---------------- */
+/* ANA KAPSAYICI */
 .notion-kapsayici {
   width: 100%;
   max-width: 980px;
@@ -367,7 +369,7 @@ body {
   font-size: 15px;
 }
 
-/* ---------------- POMODORO ---------------- */
+/* POMODORO */
 .pomodoro-karti {
   background-color: var(--bg-kart);
   backdrop-filter: blur(8px);
@@ -454,7 +456,7 @@ body {
   border-color: var(--vurgu);
 }
 
-/* ---------------- SEKMELER ---------------- */
+/* SEKMELER */
 .gorunum-sekmeleri {
   display: flex;
   gap: 10px;
@@ -479,7 +481,7 @@ body {
   background-color: var(--bg-kart-ic);
 }
 
-/* ---------------- YENİ ETKİNLİK FORMU ---------------- */
+/* ETKİNLİK FORMU */
 .yeni-etkinlik-karti {
   background-color: var(--bg-kart);
   backdrop-filter: blur(8px);
@@ -607,7 +609,7 @@ body {
   transition: width 0.3s;
 }
 
-/* ---------------- 1. LİSTE GÖRÜNÜMÜ ---------------- */
+/* LİSTE GÖRÜNÜMÜ */
 .gorev-listesi {
   display: flex;
   flex-direction: column;
@@ -649,6 +651,7 @@ body {
 .metin {
   font-size: 15px;
   font-weight: 500;
+  word-break: break-word;
 }
 
 .alt-gorev-rozet {
@@ -680,7 +683,7 @@ body {
   opacity: 0.6;
 }
 
-/* ---------------- 2. HAFTALIK GÖRÜNÜM ---------------- */
+/* HAFTALIK */
 .haftalik-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -712,7 +715,7 @@ body {
   border-bottom: 1px solid var(--kenarlik);
 }
 
-/* ---------------- 3. AYLIK GÖRÜNÜM ---------------- */
+/* AYLIK */
 .aylik-scroll-alani {
   width: 100%;
 }
@@ -762,7 +765,7 @@ body {
   color: var(--yazi-ikincil);
 }
 
-/* ---------------- KART HAPLARI ---------------- */
+/* KART HAPLARI */
 .etkinlik-hapi {
   padding: 6px 8px;
   border-radius: 6px;
@@ -788,7 +791,7 @@ body {
   opacity: 0.5;
 }
 
-/* ---------------- DETAY ÇEKMECESİ ---------------- */
+/* ÇEKMECE */
 .cekmec-arkaplan {
   position: fixed;
   top: 0;
@@ -969,7 +972,7 @@ body {
   resize: vertical;
 }
 
-/* ---------------- FARKINDALIK & TOPLULUK MODALLARI ---------------- */
+/* MODALLAR */
 .modal-arkaplan {
   position: fixed;
   top: 0;
@@ -1087,7 +1090,7 @@ body {
   font-size: 12px;
 }
 
-/* ---------------- ALARM & KUTLAMA ---------------- */
+/* ALARM & KUTLAMA */
 .alarm-karti {
   position: fixed;
   bottom: 24px;
@@ -1153,7 +1156,7 @@ body {
 }
 
 /* ========================================================= */
-/* 📱 KAPSAMLI MOBİL VE TABLET UYUMLULUK KURALLARI (RESPONSIVE) */
+/* 📱 KUSURSUZ MOBİL VE TABLET DÜZENİ (YENİLENMİŞ RESPONSIVE) */
 /* ========================================================= */
 @media (max-width: 768px) {
   body {
@@ -1162,17 +1165,19 @@ body {
 
   .auth-kapsayici {
     margin-top: 20px;
-    padding: 0 4px;
+    padding: 0;
   }
 
   .auth-kart {
-    padding: 24px 18px;
+    padding: 22px 16px;
+    border-radius: 14px;
   }
 
   .notion-kapsayici {
     gap: 14px;
   }
 
+  /* Üst bar mobilde 2 satırda rahatça dizilir */
   .ust-bar {
     flex-direction: column;
     align-items: stretch;
@@ -1186,18 +1191,18 @@ body {
 
   .ust-sag {
     flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 6px;
+    justify-content: flex-start;
+    gap: 8px;
   }
 
   .tema-renk-paleti {
-    padding: 4px 8px;
+    padding: 5px 8px;
     gap: 6px;
   }
 
   .renk-noktasi {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   .yardimci-btn, .tema-degistir-btn {
@@ -1210,11 +1215,13 @@ body {
     font-size: 12px;
   }
 
+  /* Sekmeler parmakla rahat kaydırılır */
   .gorunum-sekmeleri {
     overflow-x: auto;
     white-space: nowrap;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .gorunum-sekmeleri::-webkit-scrollbar {
@@ -1222,13 +1229,14 @@ body {
   }
 
   .sekme-btn {
-    padding: 7px 12px;
+    padding: 8px 14px;
     font-size: 13px;
     flex-shrink: 0;
   }
 
+  /* Form kutucukları tam genişlik */
   .yeni-etkinlik-karti {
-    padding: 12px;
+    padding: 12px 14px;
     gap: 10px;
   }
 
@@ -1247,8 +1255,24 @@ body {
     text-align: center;
   }
 
+  /* Navigasyon bar başlık ve butonları */
+  .navigasyon-bar {
+    padding: 8px 10px;
+  }
+
+  .nav-baslik {
+    font-size: 14px;
+  }
+
+  .nav-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  /* 1. LİSTE MOBİL */
   .gorev-satir {
     padding: 12px;
+    align-items: flex-start;
   }
 
   .gorev-satir-sol {
@@ -1257,33 +1281,56 @@ body {
 
   .metin {
     font-size: 14px;
+    line-height: 1.4;
   }
 
+  /* 2. HAFTALIK MOBİL: Günler alt alta tam oturur, sıkışma yapmaz */
   .haftalik-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 10px;
   }
 
   .haftalik-gun-kutu {
     min-height: auto;
-    padding: 10px;
+    padding: 12px;
   }
 
+  .gun-baslik {
+    font-size: 13px;
+    padding-bottom: 4px;
+  }
+
+  /* 3. AYLIK MOBİL: Yatay kaydırma ile tüm ay ferah görünür */
   .aylik-scroll-alani {
     overflow-x: auto;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
   }
 
-  .gun-adlari-grid, .aylik-grid {
-    min-width: 580px;
+  .gun-adlari-grid {
+    min-width: 600px;
+    font-size: 12px;
+    padding: 6px 0;
+  }
+
+  .aylik-grid {
+    min-width: 600px;
+    gap: 6px;
   }
 
   .aylik-gun-kutu {
-    min-height: 80px;
+    min-height: 85px;
     padding: 6px;
   }
 
+  .etkinlik-hapi {
+    font-size: 10px;
+    padding: 4px 6px;
+    line-height: 1.2;
+  }
+
+  /* Çekmece tam ekran oturur */
   .detay-cekmecesi {
     max-width: 100vw;
     padding: 20px 16px;
@@ -1293,6 +1340,7 @@ body {
     font-size: 19px;
   }
 
+  /* Pomodoro mobil ayarları */
   .pomodoro-sayac {
     font-size: 38px;
   }
@@ -1302,17 +1350,17 @@ body {
     justify-content: center;
   }
 
+  /* Uyarı ve kutlamalar taşmaz */
   .alarm-karti {
-    left: 12px;
-    right: 12px;
+    left: 10px;
+    right: 10px;
     bottom: 12px;
     padding: 12px 14px;
-    justify-content: space-between;
   }
 
   .kutlama-karti {
-    right: 12px;
-    left: 12px;
+    right: 10px;
+    left: 10px;
     bottom: 12px;
     text-align: center;
   }
