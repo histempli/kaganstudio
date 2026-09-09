@@ -807,7 +807,7 @@ temaBtn.addEventListener("click", () => {
   temaUygula(aktif);
 });
 
-// --- 9. ZEN MODU & ORTAM SESLERİ ---
+// --- 9. ZEN MODU & GERÇEK HD ORTAM SESLERİ ---
 zenModuBtn.addEventListener("click", () => {
   document.body.classList.toggle("zen-aktif");
   const aktifMi = document.body.classList.contains("zen-aktif");
@@ -817,52 +817,36 @@ zenModuBtn.addEventListener("click", () => {
   }
 });
 
-let sesCtx = null;
-let sesDugumu = null;
+// Gerçek yüksek kaliteli (HQ) ortam ses akışları
+const sesDosyalari = {
+  yagmur: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
+  somine: "https://actions.google.com/sounds/v1/ambiences/fireplace.ogg",
+  kafe: "https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg"
+};
 
-function sesUret(tur) {
-  if (sesCtx) {
-    sesCtx.close();
-    sesCtx = null;
-  }
-  if (tur === "kapali") return;
+let aktifAudio = null;
 
-  sesCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const bufferSize = sesCtx.sampleRate * 2;
-  const buffer = sesCtx.createBuffer(1, bufferSize, sesCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-
-  let sonDeger = 0;
-  for (let i = 0; i < bufferSize; i++) {
-    const beyaz = Math.random() * 2 - 1;
-    if (tur === "yagmur") {
-      sonDeger = (sonDeger + 0.02 * beyaz) / 1.02;
-      data[i] = sonDeger * 3.5;
-    } else if (tur === "somine") {
-      const citirti = Math.random() > 0.992 ? (Math.random() * 2 - 1) * 0.8 : 0;
-      sonDeger = (sonDeger + 0.04 * beyaz) / 1.04;
-      data[i] = sonDeger * 1.5 + citirti;
-    } else {
-      sonDeger = (sonDeger + 0.01 * beyaz) / 1.01;
-      data[i] = sonDeger * 4.5;
-    }
+function ortamSesiCal(tur) {
+  // Önce çalan sesi durdur ve temizle
+  if (aktifAudio) {
+    aktifAudio.pause();
+    aktifAudio.currentTime = 0;
+    aktifAudio = null;
   }
 
-  const kaynak = sesCtx.createBufferSource();
-  kaynak.buffer = buffer;
-  kaynak.loop = true;
+  if (tur === "kapali" || !sesDosyalari[tur]) return;
 
-  const kazanc = sesCtx.createGain();
-  kazanc.gain.value = 0.15;
+  aktifAudio = new Audio(sesDosyalari[tur]);
+  aktifAudio.loop = true;      // Sürekli kesintisiz döngü
+  aktifAudio.volume = 0.45;     // Odaklanmayı bozmayacak yumuşak ses seviyesi
 
-  kaynak.connect(kazanc);
-  kazanc.connect(sesCtx.destination);
-  kaynak.start();
-  sesDugumu = kaynak;
+  aktifAudio.play().catch(err => {
+    console.warn("Tarayıcı otomatik ses oynatmayı engelledi, kullanıcı etkileşimi bekleniyor:", err);
+  });
 }
 
 ortamSesiSecim.addEventListener("change", (e) => {
-  sesUret(e.target.value);
+  ortamSesiCal(e.target.value);
 });
 
 // Başlangıç Ayarları
