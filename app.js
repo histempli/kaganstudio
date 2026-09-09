@@ -137,7 +137,13 @@ function mesajGoster(metin, tur) {
   authMesaj.textContent = metin;
 }
 
-const authIslemiYap = async () => {
+const // Şifre Güvenlik Kontrolü Fonksiyonu
+function sifreGuvenliMi(sifre) {
+  // En az 8 karakter, en az 1 büyük harf, en az 1 rakam
+  const regex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+  return regex.test(sifre);
+}
+authIslemiYap = async () => {
   const ad = kullaniciAdi.value.trim().toLowerCase();
   const sifre = kullaniciSifre.value.trim();
 
