@@ -67,26 +67,38 @@
         <!-- POMODORO BUTONU -->
         <button id="pomodoroToggleBtn" class="yardimci-btn pomodoro-btn">🍅 25:00</button>
 
-        <!-- YEDEKLEME BUTONLARI -->
-        <button id="yedekIndirBtn" class="yardimci-btn" title="Verileri İndir">💾 Yedekle</button>
-        <button id="yedekModalAcBtn" class="yardimci-btn" title="Yedek Geri Yükle">📥 Geri Yükle</button>
+        <!-- ÇALIŞMA ODASI (TOPLULUK) -->
+        <button id="toplulukBtn" class="yardimci-btn">👥 Çalışma Odası</button>
 
         <!-- BİLDİRİM İZNİ -->
         <button id="bildirimIzinBtn" class="yardimci-btn" title="Bildirimleri Aç">🔔 İzin</button>
 
-        <!-- ÇALIŞMA ODASI (TOPLULUK) -->
-        <button id="toplulukBtn" class="yardimci-btn">👥 Çalışma Odası</button>
+        <!-- AYARLAR BUTONU & MENÜSÜ -->
+        <div class="ayar-kapsayici" style="position: relative;">
+          <button id="ayarMenuAcBtn" class="yardimci-btn" title="Uygulama Ayarları">⚙️ Ayarlar</button>
+          
+          <div id="ayarMenusu" class="ayar-acilir-menu gizli">
+            <div class="ayar-baslik">Görünüm & Tema</div>
+            <div class="ayar-satir">
+              <span>Gece Modu</span>
+              <button id="temaBtn" class="tema-degistir-btn" title="Temayı Değiştir" style="padding:4px 10px;"><span id="temaIkon">🌙</span></button>
+            </div>
+            <div class="ayar-satir" style="flex-direction:column; align-items:flex-start; gap:6px;">
+              <span>Pastel Tema Paleti</span>
+              <div class="tema-renk-paleti">
+                <span class="renk-noktasi renk-sade aktif" data-renk="sade" title="Sade"></span>
+                <span class="renk-noktasi renk-mavi" data-renk="mavi" title="Okyanus"></span>
+                <span class="renk-noktasi renk-pembe" data-renk="pembe" title="Gün Batımı"></span>
+                <span class="renk-noktasi renk-yesil" data-renk="yesil" title="Orman"></span>
+                <span class="renk-noktasi renk-mor" data-renk="mor" title="Gece"></span>
+              </div>
+            </div>
 
-        <!-- TEMA DEĞİŞTİR (DARK/LIGHT) -->
-        <button id="temaBtn" class="tema-degistir-btn" title="Temayı Değiştir"><span id="temaIkon">🌙</span></button>
-
-        <!-- PASTEL PALET -->
-        <div class="tema-renk-paleti">
-          <span class="renk-noktasi renk-sade aktif" data-renk="sade" title="Sade"></span>
-          <span class="renk-noktasi renk-mavi" data-renk="mavi" title="Okyanus"></span>
-          <span class="renk-noktasi renk-pembe" data-renk="pembe" title="Gün Batımı"></span>
-          <span class="renk-noktasi renk-yesil" data-renk="yesil" title="Orman"></span>
-          <span class="renk-noktasi renk-mor" data-renk="mor" title="Gece"></span>
+            <div class="ayar-cizgi"></div>
+            <div class="ayar-baslik">Veri & Yedekleme</div>
+            <button id="yedekIndirBtn" class="yardimci-btn" style="width:100%; text-align:left; margin-bottom:6px;">💾 Verileri Yedekle (İndir)</button>
+            <button id="yedekModalAcBtn" class="yardimci-btn" style="width:100%; text-align:left;">📥 Verileri Geri Yükle</button>
+          </div>
         </div>
 
         <!-- PROFİL & ŞİFRE & ÇIKIŞ -->
