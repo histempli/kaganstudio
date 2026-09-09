@@ -877,57 +877,54 @@ yedekIndirBtn.addEventListener("click", () => {
     hesaplar: getHesaplar()
   };
 
-  const veriStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(yedekVerisi, null, 2));
+  const blob = new Blob([JSON.stringify(yedekVerisi, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
   const indirBaglanti = document.createElement("a");
-  indirBaglanti.setAttribute("href", veriStr);
-  indirBaglanti.setAttribute("download", `kaganstudio_yedek_${aktifKullanici}.json`);
+  indirBaglanti.href = url;
+  indirBaglanti.download = `kaganstudio_yedek_${aktifKullanici}.json`;
   document.body.appendChild(indirBaglanti);
   indirBaglanti.click();
-  indirBaglanti.remove();
+  document.body.removeChild(indirBaglanti);
+  URL.revokeObjectURL(url);
 });
 
-yedekYukleBtn.addEventListener("click", () => {
-  if (yedekDosyaInput) {
-    yedekDosyaInput.value = ""; // Aynı dosya tekrar seçilebilsin
-    yedekDosyaInput.click();
-  }
-});
-
-if (yedekDosyaInput) {
-  yedekDosyaInput.addEventListener("change", (e) => {
-    const dosya = e.target.files[0];
+// Doğrudan Native File Change Tetikleyicisi
+const dosyaSecici = document.getElementById("yedekDosyaInput");
+if (dosyaSecici) {
+  dosyaSecici.addEventListener("change", function(e) {
+    const dosya = this.files && this.files[0];
     if (!dosya) return;
 
     const okuyucu = new FileReader();
-    okuyucu.onload = (olay) => {
+    okuyucu.onload = function(olay) {
       try {
-        const yuklenen = JSON.parse(olay.target.result);
-        
-        // Veri bütünlüğü kontrolü
-        if (yuklenen && yuklenen.etkinlikler && Array.isArray(yuklenen.etkinlikler)) {
+        const hamIcerik = olay.target.result;
+        const yuklenen = JSON.parse(hamIcerik);
+
+        if (yuklenen && Array.isArray(yuklenen.etkinlikler)) {
           etkinlikler = yuklenen.etkinlikler;
           
-          // 1. Kullanıcının cihaz deposuna doğrudan kaydet
+          // Doğrudan kalıcı belleğe mühürle
           kullaniciVerileriniKaydet();
-          
-          // 2. Varsa hesap bilgilerini de birleştir
+
           if (yuklenen.hesaplar) {
             const mevcutHesaplar = getHesaplar();
-            const birlestirilmis = { ...mevcutHesaplar, ...yuklenen.hesaplar };
-            hesapKaydet(birlestirilmis);
+            hesapKaydet({ ...mevcutHesaplar, ...yuklenen.hesaplar });
           }
 
-          // 3. Ekranı baştan çiz ve kutla
           herSeyiCiz();
           konfetiVeKutlama();
-          alert("✨ Tüm verilerin ve planların başarıyla geri yüklendi!");
+          alert("✨ Tebrikler! Verileriniz eksiksiz yüklendi.");
         } else {
-          alert("⚠️ Hata: Seçilen dosya geçerli bir KaganStudio yedek dosyası değil.");
+          alert("⚠️ Hata: Seçilen dosya KaganStudio yedek formatında değil.");
         }
-      } catch (hata) {
-        alert("⚠️ Dosya açılırken hata oluştu: " + hata.message);
+      } catch (err) {
+        alert("⚠️ Dosya ayrıştırılamadı: " + err.message);
+      } finally {
+        dosyaSecici.value = ""; // Seçimi sıfırla ki tekrar yüklenebilsin
       }
     };
+
     okuyucu.readAsText(dosya);
   });
 }
