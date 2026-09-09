@@ -1,38 +1,9 @@
-/* Sayfanın küçülmesini (zoom out olmasını) kesin olarak engelle */
-html, body {
+html {
   width: 100%;
-  overflow-x: hidden;
+  height: 100%;
   margin: 0;
   padding: 0;
-}
-
-/* Üst barın elemanlarını mobil ekrana sığdır */
-.ust-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-}
-
-/* Mobil ve esnek görünüm düzeltmesi */
-body {
-  zoom: 1;
   -webkit-text-size-adjust: 100%;
-}
-
-.notion-kapsayici {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px;
-  box-sizing: border-box;
-}
-
-.ust-bar {
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: space-between;
 }
 
 * {
@@ -119,6 +90,11 @@ body.dark-mode[data-pastel="mor"] {
 }
 
 body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px 20px;
+  box-sizing: border-box;
   background-color: var(--bg-ana);
   background-image: linear-gradient(var(--overlay), var(--overlay)), var(--bg-gorsel);
   background-size: cover;
@@ -126,11 +102,9 @@ body {
   background-attachment: fixed;
   color: var(--yazi-ana);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 32px 20px;
   transition: background-image 0.4s ease, background-color 0.2s ease, color 0.2s ease;
   overflow-x: hidden;
 }
@@ -1222,7 +1196,7 @@ body.zen-aktif #zenModuBtn {
 /* ========================================================= */
 @media (max-width: 768px) {
   body {
-    padding: 12px 10px;
+    padding: 16px 12px;
   }
 
   .auth-kapsayici {
@@ -1417,11 +1391,13 @@ body.zen-aktif #zenModuBtn {
     text-align: center;
   }
 }
+
 .yedek-etiket-btn {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
 }
+
 .yedek-etiket-btn input[type="file"] {
   display: none !important;
 }
