@@ -7,8 +7,6 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2eaadc">
   <link rel="stylesheet" href="style.css">
-  <!-- Supabase Kütüphanesi -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body data-pastel="sade">
   <canvas id="konfetiTuval" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;"></canvas>
@@ -29,7 +27,7 @@
 
       <div id="authMesaj" class="auth-mesaj gizli"></div>
 
-      <form id="authForm" class="auth-form">
+      <form id="authForm" class="auth-form" onsubmit="return false;">
         <div class="input-grup">
           <label for="kullaniciAdi">Kullanıcı Adı</label>
           <input type="text" id="kullaniciAdi" placeholder="kullanici_adi" autocomplete="off" required>
@@ -40,7 +38,7 @@
           <input type="password" id="kullaniciSifre" placeholder="••••••••" required>
         </div>
 
-        <button type="submit" id="authGonderBtn" class="auth-ana-btn">Giriş Yap</button>
+        <button type="button" id="authGonderBtn" class="auth-ana-btn">Giriş Yap</button>
       </form>
     </div>
   </div>
