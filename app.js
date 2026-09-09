@@ -1,7 +1,13 @@
-// --- SUPABASE BULUT BAĞLANTISI ---
+// --- 0. SUPABASE GÜVENLİ BAĞLANTI KONTROLÜ ---
 const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let supabase = null;
+if (window.supabase && typeof window.supabase.createClient === "function") {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  alert("⚠️ Supabase kütüphanesi yüklenemedi! Lütfen Brave Kalkanlarını (Brave Shields) bu site için kapatıp sayfayı yenileyin.");
+}
 
 // --- DOM ELEMANLARI ---
 const authEkrani = document.getElementById("authEkrani");
@@ -41,7 +47,7 @@ const ilerlemeBari = document.getElementById("ilerlemeBari");
 const yuzdeMetin = document.getElementById("yuzdeMetin");
 const kutlamaKarti = document.getElementById("kutlamaKarti");
 
-// Çekmece
+// Çekmece & Modallar
 const cekmecArkaplan = document.getElementById("cekmecArkaplan");
 const detayCekmecesi = document.getElementById("detayCekmecesi");
 const cekmecKapatBtn = document.getElementById("cekmecKapatBtn");
@@ -55,7 +61,6 @@ const altGorevEkleBtn = document.getElementById("altGorevEkleBtn");
 const altGorevListesi = document.getElementById("altGorevListesi");
 const altGorevSayac = document.getElementById("altGorevSayac");
 
-// Pomodoro
 const pomodoroToggleBtn = document.getElementById("pomodoroToggleBtn");
 const pomodoroKarti = document.getElementById("pomodoroKarti");
 const pomodoroKapat = document.getElementById("pomodoroKapat");
@@ -65,7 +70,6 @@ const pomoSureAyarlaBtn = document.getElementById("pomoSureAyarlaBtn");
 const pomoBaslatBtn = document.getElementById("pomoBaslatBtn");
 const pomoSifirlaBtn = document.getElementById("pomoSifirlaBtn");
 
-// Topluluk
 const toplulukBtn = document.getElementById("toplulukBtn");
 const uyariModali = document.getElementById("uyariModali");
 const uyariOnaylaBtn = document.getElementById("uyariOnaylaBtn");
@@ -73,7 +77,6 @@ const toplulukModali = document.getElementById("toplulukModali");
 const toplulukKapatBtn = document.getElementById("toplulukKapatBtn");
 const toplulukListesi = document.getElementById("toplulukListesi");
 
-// Yedekleme & Modal DOM
 const yedekIndirBtn = document.getElementById("yedekIndirBtn");
 const yedekModalAcBtn = document.getElementById("yedekModalAcBtn");
 const yedekModali = document.getElementById("yedekModali");
@@ -82,8 +85,6 @@ const yedekDosyaSec = document.getElementById("yedekDosyaSec");
 const yedekMetinAlani = document.getElementById("yedekMetinAlani");
 const yedegiUygulaBtn = document.getElementById("yedegiUygulaBtn");
 
-// Bildirim & Alarm & Tema & Zen
-const bildirimIzinBtn = document.getElementById("bildirimIzinBtn");
 const alarmKarti = document.getElementById("alarmKarti");
 const alarmBaslik = document.getElementById("alarmBaslik");
 const alarmZaman = document.getElementById("alarmZaman");
@@ -94,13 +95,12 @@ const renkNoktalari = document.querySelectorAll(".renk-noktasi");
 const zenModuBtn = document.getElementById("zenModuBtn");
 const ortamSesiSecim = document.getElementById("ortamSesiSecim");
 
-// --- DURUM DEĞİŞKENLERİ ---
 let authModu = "giris";
 let aktifKullanici = null;
 let etkinlikler = [];
 let aktifSeciliEtkinlikId = null;
 
-// --- 1. BULUT KULLANICI İŞLEMLERİ (AUTH) ---
+// --- 1. AUTH İŞLEMLERİ ---
 sekmeGiris.addEventListener("click", () => {
   authModu = "giris";
   sekmeGiris.classList.add("aktif");
@@ -129,6 +129,12 @@ function mesajGoster(metin, tur) {
 
 authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  if (!supabase) {
+    mesajGoster("Supabase bağlantısı kurulamadı. Reklam engelleyiciyi kapatın.", "hata");
+    return;
+  }
+
   const ad = kullaniciAdi.value.trim().toLowerCase();
   const sifre = kullaniciSifre.value.trim();
 
@@ -142,24 +148,24 @@ authForm.addEventListener("submit", async (e) => {
 
   try {
     if (authModu === "kayit") {
-      const { data: mevcut } = await supabase
+      const { data: mevcut, error: sorguHata } = await supabase
         .from("profiller")
         .select("kullanici_adi")
         .eq("kullanici_adi", ad)
         .maybeSingle();
 
+      if (sorguHata) throw new Error("Tablo bulunamadı veya SQL hatası: " + sorguHata.message);
+
       if (mevcut) {
         mesajGoster("Bu kullanıcı adı zaten alınmış!", "hata");
-        authGonderBtn.disabled = false;
-        authGonderBtn.textContent = "Yeni Hesap Oluştur";
         return;
       }
 
-      const { error } = await supabase
+      const { error: ekleHata } = await supabase
         .from("profiller")
         .insert([{ kullanici_adi: ad, sifre: sifre, calisilan_dakika: 0 }]);
 
-      if (error) throw error;
+      if (ekleHata) throw new Error(ekleHata.message);
 
       mesajGoster("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.", "basari");
       setTimeout(() => {
@@ -167,32 +173,29 @@ authForm.addEventListener("submit", async (e) => {
         kullaniciSifre.value = "";
       }, 1200);
     } else {
-      const { data: profil, error } = await supabase
+      const { data: profil, error: girisHata } = await supabase
         .from("profiller")
         .select("*")
         .eq("kullanici_adi", ad)
         .maybeSingle();
 
-      if (error) throw error;
+      if (girisHata) throw new Error("Giriş sorgu hatası: " + girisHata.message);
 
       if (!profil) {
         mesajGoster("Kullanıcı bulunamadı! Önce kayıt olun.", "hata");
-        authGonderBtn.disabled = false;
-        authGonderBtn.textContent = "Giriş Yap";
         return;
       }
 
       if (profil.sifre !== sifre) {
         mesajGoster("Hatalı şifre girdiniz!", "hata");
-        authGonderBtn.disabled = false;
-        authGonderBtn.textContent = "Giriş Yap";
         return;
       }
 
       girisBasarili(ad);
     }
   } catch (err) {
-    mesajGoster("Bulut hatası: " + err.message, "hata");
+    mesajGoster("Hata: " + err.message, "hata");
+    console.error("Giriş/Kayıt Detay Hatası:", err);
   } finally {
     authGonderBtn.disabled = false;
     authGonderBtn.textContent = authModu === "giris" ? "Giriş Yap" : "Yeni Hesap Oluştur";
@@ -226,7 +229,7 @@ cikisYapBtn.addEventListener("click", () => {
 
 // --- 2. BULUT VERİ SENKRONİZASYONU ---
 async function buluttanGorevleriYukle() {
-  if (!aktifKullanici) return;
+  if (!aktifKullanici || !supabase) return;
 
   const { data, error } = await supabase
     .from("gorevler")
@@ -235,7 +238,7 @@ async function buluttanGorevleriYukle() {
     .order("olusturuldu", { ascending: false });
 
   if (error) {
-    console.error("Görevler alınamadı:", error);
+    console.error("Görevler çekilemedi:", error);
     return;
   }
 
@@ -255,6 +258,7 @@ async function buluttanGorevleriYukle() {
 }
 
 async function bulutaGorevEkle(gorev) {
+  if (!supabase) return;
   await supabase.from("gorevler").insert([{
     id: gorev.id,
     kullanici_adi: aktifKullanici,
@@ -270,6 +274,7 @@ async function bulutaGorevEkle(gorev) {
 }
 
 async function buluttaGorevGuncelle(id, veriler) {
+  if (!supabase) return;
   const guncelle = {};
   if (veriler.tamamlandi !== undefined) guncelle.tamamlandi = veriler.tamamlandi;
   if (veriler.notlar !== undefined) guncelle.notlar = veriler.notlar;
@@ -279,11 +284,12 @@ async function buluttaGorevGuncelle(id, veriler) {
 }
 
 async function buluttanGorevSil(id) {
+  if (!supabase) return;
   await supabase.from("gorevler").delete().eq("id", id);
 }
 
 async function bulutaDakikaEkle(dk) {
-  if (!aktifKullanici) return;
+  if (!aktifKullanici || !supabase) return;
   const { data } = await supabase
     .from("profiller")
     .select("calisilan_dakika")
@@ -297,7 +303,7 @@ async function bulutaDakikaEkle(dk) {
     .eq("kullanici_adi", aktifKullanici);
 }
 
-// --- 3. TAKVİM VE LİSTE ÇİZİM MOTORU ---
+// --- 3. ÇİZİM MOTORU ---
 let gecerliTarih = new Date();
 const gercekBugunStr = `${gecerliTarih.getFullYear()}-${String(gecerliTarih.getMonth() + 1).padStart(2, '0')}-${String(gecerliTarih.getDate()).padStart(2, '0')}`;
 if (etkinlikTarih) etkinlikTarih.value = gercekBugunStr;
@@ -333,7 +339,6 @@ function listeCiz() {
   etkinlikler.forEach(e => {
     const satir = document.createElement("div");
     satir.className = `gorev-satir ${e.tamamlandi ? "tamamlandi" : ""}`;
-
     const rozetHtml = altGorevRozetiUret(e.altGorevler);
 
     satir.innerHTML = `
@@ -356,7 +361,6 @@ function listeCiz() {
       if (e.altGorevler && e.altGorevler.length > 0) {
         e.altGorevler.forEach(alt => { alt.tamamlandi = e.tamamlandi; });
       }
-
       if (e.tamamlandi) konfetiVeKutlama();
       herSeyiCiz();
 
@@ -381,7 +385,6 @@ function haftalikCiz() {
   haftalikGrid.innerHTML = "";
   const bitisTarihi = new Date(seciliHaftaBasi);
   bitisTarihi.setDate(bitisTarihi.getDate() + 6);
-
   haftalikAralikBaslik.textContent = `${seciliHaftaBasi.getDate()} ${seciliHaftaBasi.toLocaleString('tr-TR', {month:'short'})} - ${bitisTarihi.getDate()} ${bitisTarihi.toLocaleString('tr-TR', {month:'short', year:'numeric'})}`;
 
   for (let i = 0; i < 7; i++) {
@@ -398,7 +401,6 @@ function haftalikCiz() {
       const hap = document.createElement("div");
       hap.className = `etkinlik-hapi ${e.tamamlandi ? "tamamlandi" : ""}`;
       const rozet = altGorevRozetiUret(e.altGorevler, true);
-
       hap.innerHTML = `<span>${e.saat ? e.saat + ' ' : ''}${e.baslik}</span> ${rozet}`;
       hap.addEventListener("click", () => cekmeceyiAc(e.id));
       kutu.appendChild(hap);
@@ -442,7 +444,6 @@ function aylikCiz() {
       const hap = document.createElement("div");
       hap.className = `etkinlik-hapi ${e.tamamlandi ? "tamamlandi" : ""}`;
       const rozet = altGorevRozetiUret(e.altGorevler, true);
-
       hap.innerHTML = `<span>${e.baslik}</span> ${rozet}`;
       hap.addEventListener("click", () => cekmeceyiAc(e.id));
       kutu.appendChild(hap);
@@ -463,7 +464,7 @@ sonrakiAyBtn.addEventListener("click", () => {
   aylikCiz();
 });
 
-// --- 4. DETAY ÇEKMECESİ & ALT GÖREVLER ---
+// --- 4. DETAY ÇEKMECESİ ---
 function cekmeceyiAc(id) {
   const e = etkinlikler.find(item => item.id === id);
   if (!e) return;
@@ -479,7 +480,6 @@ function cekmeceyiAc(id) {
   cekmeceNotlar.value = e.notlar;
 
   altGorevleriCiz(e);
-
   cekmecArkaplan.classList.remove("gizli");
   detayCekmecesi.classList.remove("gizli");
 }
@@ -528,7 +528,6 @@ function altGorevleriCiz(e) {
       } else if (!tumuBitti && e.tamamlandi) {
         e.tamamlandi = false;
       }
-
       altGorevleriCiz(e);
       herSeyiCiz();
       await buluttaGorevGuncelle(e.id, { tamamlandi: e.tamamlandi, altGorevler: e.altGorevler });
@@ -553,12 +552,7 @@ async function yeniAltGorevEkle() {
   const e = etkinlikler.find(item => item.id === aktifSeciliEtkinlikId);
   if (!e) return;
 
-  e.altGorevler.push({
-    id: Date.now(),
-    metin: metin,
-    tamamlandi: false
-  });
-
+  e.altGorevler.push({ id: Date.now(), metin: metin, tamamlandi: false });
   altGorevInput.value = "";
   altGorevleriCiz(e);
   herSeyiCiz();
@@ -618,9 +612,7 @@ function pomoBaslatDurdur() {
         clearInterval(pomoZamanlayici);
         pomoCalisiyor = false;
         pomoBaslatBtn.textContent = "Başlat";
-
         await bulutaDakikaEkle(pomoDakika);
-
         konfetiVeKutlama();
         alarmTetikle("🍅 Pomodoro Tamamlandı!", `Tebrikler! ${pomoDakika} dakikalık odak seansını tamamladın.`);
         pomoSifirla();
@@ -640,7 +632,7 @@ function pomoSifirla() {
 pomoBaslatBtn.addEventListener("click", pomoBaslatDurdur);
 pomoSifirlaBtn.addEventListener("click", pomoSifirla);
 
-// --- 6. GERÇEK CANLI TOPLULUK ODASI ---
+// --- 6. CANLI TOPLULUK ODASI ---
 toplulukBtn.addEventListener("click", () => {
   uyariModali.classList.remove("gizli");
 });
@@ -656,6 +648,7 @@ toplulukKapatBtn.addEventListener("click", () => {
 });
 
 async function toplulukTablosunuCiz() {
+  if (!supabase) return;
   toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--yazi-ikincil);padding:10px;">Buluttan yükleniyor...</div>`;
 
   const { data: profiller, error } = await supabase
@@ -664,7 +657,7 @@ async function toplulukTablosunuCiz() {
     .order("calisilan_dakika", { ascending: false });
 
   if (error || !profiller) {
-    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--silme-hover);padding:10px;">Liste alınamadı.</div>`;
+    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--silme-hover);padding:10px;">Liste alınamadı: ${error ? error.message : ''}</div>`;
     return;
   }
 
@@ -673,7 +666,6 @@ async function toplulukTablosunuCiz() {
     const saat = ((kisi.calisilan_dakika || 0) / 60).toFixed(1);
     const satir = document.createElement("div");
     satir.className = "topluluk-satir";
-
     const benMiyim = kisi.kullanici_adi === aktifKullanici ? " (Sen)" : "";
 
     satir.innerHTML = `
@@ -824,7 +816,7 @@ temaBtn.addEventListener("click", () => {
   temaUygula(aktif);
 });
 
-// --- 9. ZEN MODU & GERÇEK HD ORTAM SESLERİ ---
+// --- 9. ZEN MODU & HQ SESLER ---
 zenModuBtn.addEventListener("click", () => {
   document.body.classList.toggle("zen-aktif");
   const aktifMi = document.body.classList.contains("zen-aktif");
@@ -858,7 +850,7 @@ function ortamSesiCal(tur) {
 
 ortamSesiSecim.addEventListener("change", (e) => ortamSesiCal(e.target.value));
 
-// --- 10. YEDEKLEME VE GERİ YÜKLEME (BULUT DESTEKLİ MODAL) ---
+// --- 10. YEDEKLEME VE GERİ YÜKLEME ---
 if (yedekIndirBtn) {
   yedekIndirBtn.addEventListener("click", () => {
     if (!aktifKullanici) return;
