@@ -2,29 +2,30 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KaganStudio — Workspace & Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KaganStudio</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-pastel="sade">
+  <canvas id="konfetiTuval" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;"></canvas>
 
-  <!-- 1. GİRİŞ & KAYIT EKRANI -->
+  <!-- GİRİŞ & KAYIT EKRANI -->
   <div id="authEkrani" class="auth-kapsayici">
     <div class="auth-kart">
       <div class="auth-marka">
-        <span class="sayfa-ikonu">📋</span>
+        <span style="font-size:28px;">⚡</span>
         <h1>Kagan<span>Studio</span></h1>
       </div>
-      <p class="auth-aciklama">Kişisel çalışma alanınıza ve takviminize erişin.</p>
+      <p class="auth-aciklama">Kişisel odaklanma, görev ve planlama alanın</p>
 
       <div class="auth-sekmeler">
-        <button id="sekmeGiris" class="auth-sekme aktif">Giriş Yap</button>
-        <button id="sekmeKayit" class="auth-sekme">Kayıt Ol</button>
+        <button id="sekmeGiris" class="auth-sekme aktif" type="button">Giriş Yap</button>
+        <button id="sekmeKayit" class="auth-sekme" type="button">Kayıt Ol</button>
       </div>
 
       <div id="authMesaj" class="auth-mesaj gizli"></div>
 
-      <form id="authForm" class="auth-form" onsubmit="return false;">
+      <form id="authForm" class="auth-form">
         <div class="input-grup">
           <label for="kullaniciAdi">Kullanıcı Adı</label>
           <input type="text" id="kullaniciAdi" placeholder="kullanici_adi" autocomplete="off" required>
@@ -40,135 +41,150 @@
     </div>
   </div>
 
-  <!-- 2. ANA ÇALIŞMA ALANI -->
+  <!-- ANA ÇALIŞMA ALANI -->
   <div id="anaUygulamaEkrani" class="notion-kapsayici gizli">
+    <!-- ÜST BAR -->
     <header class="ust-bar">
       <div class="marka">
-        <span class="sayfa-ikonu">🗓️</span>
+        <span class="logo-ikon">⚡</span>
         <span class="logo">Kagan<span>Studio</span></span>
       </div>
 
       <div class="ust-sag">
+        <!-- AMBİYANS SESLERİ -->
+        <div class="ortam-sesleri-alani">
+          <select id="ortamSesiSecim" class="notion-select" title="Ortam Sesi">
+            <option value="kapali">🔇 Ses Yok</option>
+            <option value="yagmur">🌧️ Yağmur</option>
+            <option value="somine">🔥 Şömine</option>
+            <option value="kafe">☕ Kafe</option>
+          </select>
+        </div>
+
+        <!-- ZEN MODU -->
+        <button id="zenModuBtn" class="yardimci-btn" title="Zen Odak Modu">🔕 Zen</button>
+
+        <!-- POMODORO BUTONU -->
+        <button id="pomodoroToggleBtn" class="yardimci-btn pomodoro-btn">🍅 25:00</button>
+
+        <!-- BİLDİRİM İZNİ -->
+        <button id="bildirimIzinBtn" class="yardimci-btn" title="Bildirimleri Aç">🔔 İzin</button>
+
+        <!-- ÇALIŞMA ODASI (TOPLULUK) -->
+        <button id="toplulukBtn" class="yardimci-btn">👥 Çalışma Odası</button>
+
+        <!-- TEMA DEĞİŞTİR (DARK/LIGHT) -->
+        <button id="temaBtn" class="tema-degistir-btn" title="Temayı Değiştir"><span id="temaIkon">🌙</span></button>
+
+        <!-- PASTEL PALET -->
         <div class="tema-renk-paleti">
-          <button class="renk-noktasi renk-sade aktif" data-renk="sade" title="Sade / Minimal"></button>
-          <button class="renk-noktasi renk-mavi" data-renk="mavi" title="Pastel Mavi"></button>
-          <button class="renk-noktasi renk-pembe" data-renk="pembe" title="Pastel Pembe"></button>
-          <button class="renk-noktasi renk-yesil" data-renk="yesil" title="Pastel Yeşil"></button>
-          <button class="renk-noktasi renk-mor" data-renk="mor" title="Pastel Mor"></button>
+          <span class="renk-noktasi renk-sade aktif" data-renk="sade" title="Sade"></span>
+          <span class="renk-noktasi renk-mavi" data-renk="mavi" title="Okyanus"></span>
+          <span class="renk-noktasi renk-pembe" data-renk="pembe" title="Gün Batımı"></span>
+          <span class="renk-noktasi renk-yesil" data-renk="yesil" title="Orman"></span>
+          <span class="renk-noktasi renk-mor" data-renk="mor" title="Gece"></span>
         </div>
 
-        <button id="toplulukBtn" class="yardimci-btn" title="Çalışma Odası">👥 Topluluk</button>
-        <button id="pomodoroToggleBtn" class="yardimci-btn pomodoro-btn" title="Odak Sayacı">🍅 25:00</button>
-
+        <!-- PROFİL & ÇIKIŞ -->
         <div class="kullanici-profil-alani">
-          <span>👤</span>
-          <span class="profil-isim" id="profilIsim">Kullanıcı</span>
-          <button id="cikisYapBtn" class="cikis-btn" title="Oturumu Kapat">Çıkış</button>
+          <span id="profilIsim" class="profil-isim">Kullanıcı</span>
+          <button id="cikisYapBtn" class="cikis-btn" title="Çıkış Yap">Çıkış</button>
         </div>
-
-        <button id="bildirimIzinBtn" class="yardimci-btn" title="Hatırlatıcı Bildirimleri">🔔</button>
-        <button id="temaBtn" class="tema-degistir-btn" title="Açık / Koyu Mod">
-          <span id="temaIkon">🌙</span>
-        </button>
       </div>
     </header>
 
-    <!-- POMODORO WIDGET'I -->
-    <div id="pomodoroKarti" class="pomodoro-karti gizli">
+    <!-- POMODORO KARTI -->
+    <section id="pomodoroKarti" class="pomodoro-karti gizli">
       <div class="pomodoro-ust">
-        <span class="pomodoro-baslik">🍅 Odaklanma Sayacı</span>
+        <span class="pomodoro-baslik">🍅 Odaklanma Zamanlayıcısı</span>
         <button id="pomodoroKapat" class="cekmec-kapat">✕</button>
       </div>
-
       <div class="pomodoro-ayar-satir">
-        <label for="pomoDkInput">Süre (Dk, maks 180):</label>
+        <label for="pomoDkInput">Süre (Dk):</label>
         <input type="number" id="pomoDkInput" min="1" max="180" value="25">
         <button id="pomoSureAyarlaBtn" class="pomo-ayar-btn">Ayarla</button>
       </div>
-
       <div class="pomodoro-sayac" id="pomodoroZaman">25:00</div>
-
       <div class="pomodoro-kontroller">
         <button id="pomoBaslatBtn" class="pomo-kontrol-btn ana">Başlat</button>
         <button id="pomoSifirlaBtn" class="pomo-kontrol-btn">Sıfırla</button>
       </div>
-    </div>
+    </section>
 
-    <!-- SEKMELER -->
-    <div class="gorunum-sekmeleri">
-      <button class="sekme-btn aktif" data-hedef="liste-gorunumu">📋 Görevler</button>
-      <button class="sekme-btn" data-hedef="haftalik-gorunum">📅 Haftalık Plan</button>
-      <button class="sekme-btn" data-hedef="aylik-gorunum">🗓️ Aylık Takvim</button>
-    </div>
+    <!-- GÖRÜNÜM SEKMELERİ -->
+    <nav class="gorunum-sekmeleri">
+      <button class="sekme-btn aktif" data-hedef="gorunumListe">📋 Liste</button>
+      <button class="sekme-btn" data-hedef="gorunumHaftalik">📅 Haftalık</button>
+      <button class="sekme-btn" data-hedef="gorunumAylik">🗓️ Aylık</button>
+    </nav>
 
-    <!-- YENİ ETKİNLİK FORMU -->
-    <div class="yeni-etkinlik-karti">
+    <!-- YENİ ETKİNLİK GİRİŞİ -->
+    <section class="yeni-etkinlik-karti">
       <div class="giris-satir">
         <span class="arti-ikon">+</span>
-        <input type="text" id="etkinlikBaslik" placeholder="Yeni etkinlik / görev adı..." autocomplete="off">
+        <input type="text" id="etkinlikBaslik" placeholder="Yeni bir görev veya etkinlik ekle..." autocomplete="off">
       </div>
-
       <div class="form-detaylar">
         <input type="date" id="etkinlikTarih" class="notion-input">
         <input type="time" id="etkinlikSaat" class="notion-input">
-
         <select id="oncelikSecim" class="notion-select">
-          <option value="orta">🟡 Orta</option>
-          <option value="yuksek">🔴 Yüksek</option>
-          <option value="dusuk">🟢 Düşük</option>
+          <option value="dusuk">🟢 Düşük Öncelik</option>
+          <option value="orta" selected>🟡 Orta Öncelik</option>
+          <option value="yuksek">🔴 Yüksek Öncelik</option>
         </select>
-
         <select id="kategoriSecim" class="notion-select">
+          <option value="Genel">📌 Genel</option>
           <option value="Ders">📚 Ders</option>
-          <option value="Proje">💻 Proje</option>
-          <option value="Kişisel">☕ Kişisel</option>
+          <option value="İş">💼 İş</option>
+          <option value="Kişisel">🌱 Kişisel</option>
         </select>
-
         <button id="kaydetBtn" class="kaydet-btn">Ekle</button>
       </div>
-    </div>
-
-    <!-- 1. LİSTE -->
-    <section id="liste-gorunumu" class="gorunum-alani aktif">
-      <div class="ilerleme-alani">
-        <div class="ilerleme-metin">
-          <span>Genel Tamamlanma</span>
-          <span id="yuzdeMetin">%0</span>
-        </div>
-        <div class="ilerleme-cubuk-arkaplan">
-          <div id="ilerlemeBari" class="ilerleme-cubuk-dolum"></div>
-        </div>
-      </div>
-      <div class="gorev-listesi" id="listeKapsayici"></div>
     </section>
 
-    <!-- 2. HAFTALIK -->
-    <section id="haftalik-gorunum" class="gorunum-alani">
-      <div class="navigasyon-bar">
-        <button id="oncekiHaftaBtn" class="nav-btn">◀ Önceki Hafta</button>
-        <span id="haftalikAralikBaslik" class="nav-baslik">Hafta</span>
-        <button id="sonrakiHaftaBtn" class="nav-btn">Sonraki Hafta ▶</button>
+    <!-- İLERLEME ÇUBUĞU -->
+    <section class="ilerleme-alani">
+      <div class="ilerleme-metin">
+        <span>Tamamlanma Oranı</span>
+        <span id="yuzdeMetin">%0</span>
       </div>
-      <div class="haftalik-grid" id="haftalikGrid"></div>
+      <div class="ilerleme-cubuk-arkaplan">
+        <div id="ilerlemeBari" class="ilerleme-cubuk-dolum"></div>
+      </div>
     </section>
 
-    <!-- 3. AYLIK -->
-    <section id="aylik-gorunum" class="gorunum-alani">
+    <!-- 1. LİSTE GÖRÜNÜMÜ -->
+    <main id="gorunumListe" class="gorunum-alani aktif">
+      <div id="listeKapsayici" class="gorev-listesi"></div>
+    </main>
+
+    <!-- 2. HAFTALIK GÖRÜNÜM -->
+    <main id="gorunumHaftalik" class="gorunum-alani">
       <div class="navigasyon-bar">
-        <button id="oncekiAyBtn" class="nav-btn">◀ Önceki Ay</button>
-        <span id="aylikBaslik" class="nav-baslik">Ay Yıl</span>
-        <button id="sonrakiAyBtn" class="nav-btn">Sonraki Ay ▶</button>
+        <button id="oncekiHaftaBtn" class="nav-btn">← Önceki Hafta</button>
+        <span id="haftalikAralikBaslik" class="nav-baslik"></span>
+        <button id="sonrakiHaftaBtn" class="nav-btn">Sonraki Hafta →</button>
+      </div>
+      <div id="haftalikGrid" class="haftalik-grid"></div>
+    </main>
+
+    <!-- 3. AYLIK GÖRÜNÜM -->
+    <main id="gorunumAylik" class="gorunum-alani">
+      <div class="navigasyon-bar">
+        <button id="oncekiAyBtn" class="nav-btn">← Önceki Ay</button>
+        <span id="aylikBaslik" class="nav-baslik"></span>
+        <button id="sonrakiAyBtn" class="nav-btn">Sonraki Ay →</button>
       </div>
       <div class="aylik-scroll-alani">
         <div class="gun-adlari-grid">
-          <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+          <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
         </div>
-        <div class="aylik-grid" id="aylikGrid"></div>
+        <div id="aylikGrid" class="aylik-grid"></div>
       </div>
-    </section>
+    </main>
   </div>
 
-  <!-- 3. DETAY ÇEKMECESİ -->
+  <!-- DETAY & ALT GÖREV ÇEKMECESİ -->
   <div id="cekmecArkaplan" class="cekmec-arkaplan gizli"></div>
   <aside id="detayCekmecesi" class="detay-cekmecesi gizli">
     <div class="cekmec-ust">
@@ -178,75 +194,70 @@
       </div>
       <button id="cekmecKapatBtn" class="cekmec-kapat">✕</button>
     </div>
-
-    <h2 id="cekmeceBaslik" class="cekmec-baslik">Görev Adı</h2>
-    <div class="cekmec-meta">
-      <span id="cekmeceZaman">📅 Tarih & Saat</span>
-    </div>
+    <h2 id="cekmeceBaslik" class="cekmec-baslik">Görev Başlığı</h2>
+    <p id="cekmeceZaman" class="cekmec-meta"></p>
 
     <div class="cekmec-bolum">
       <div class="alt-gorev-baslik-alani">
-        <h4>Alt Görevler (Checklist)</h4>
+        <h4>Alt Görevler</h4>
         <span id="altGorevSayac" class="alt-sayac">0/0</span>
       </div>
       <div class="alt-gorev-giris">
-        <input type="text" id="altGorevInput" placeholder="Yeni alt görev ekle ve Enter'a bas...">
+        <input type="text" id="altGorevInput" placeholder="Yeni alt görev ekle...">
         <button id="altGorevEkleBtn">+</button>
       </div>
       <div id="altGorevListesi" class="alt-gorev-listesi"></div>
     </div>
 
     <div class="cekmec-bolum">
-      <h4>Notlar & Detaylar</h4>
-      <textarea id="cekmeceNotlar" placeholder="Bu göreve dair notlarını veya linkleri buraya yaz..."></textarea>
+      <h4>Notlar</h4>
+      <textarea id="cekmeceNotlar" placeholder="Bu göreve özel notlar ekle..."></textarea>
     </div>
   </aside>
 
-  <!-- 4. FARKINDALIK MODALI -->
+  <!-- FARKINDALIK MODALI -->
   <div id="uyariModali" class="modal-arkaplan gizli">
     <div class="modal-kart farkindalik-kart">
-      <div class="farkindalik-ikon">🌿</div>
-      <h3>Kendi Yolunuzdasınız</h3>
+      <div class="farkindalik-ikon">🌱</div>
+      <h3>Kendi Hızına Güven</h3>
       <p class="farkindalik-yazi">
-        Herkesin öğrenme ritmi, yaşam temposu ve dinlenme ihtiyacı tamamen kendine özeldir. 
-        <br><br>
-        Buradaki süreler bir yarış ya da kıyaslama unsuru değil; ortak bir alanda birlikte odaklanmanın sessiz bir motivasyonudur. <strong>Kendi sürecinizi kimseyle kıyaslamanız gerekmiyor.</strong>
+        Buradaki süreler bir yarış veya kıyaslama aracı değildir.<br><br>
+        Herkesin çalışma ritmi, odaklanma süresi ve gün içindeki enerjisi tamamen kendine özgüdür. 
+        <strong>Kendi adımlarına odaklan ve küçük ilerlemelerini kutla.</strong>
       </p>
       <div class="modal-butonlar-tek">
-        <button id="uyariOnaylaBtn" class="kaydet-btn">Anladım, Devam Et</button>
+        <button id="uyariOnaylaBtn" class="auth-ana-btn">Anladım, Odaya Gir</button>
       </div>
     </div>
   </div>
 
-  <!-- 5. TOPLULUK MODALI -->
+  <!-- ÇALIŞMA ODASI MODALI -->
   <div id="toplulukModali" class="modal-arkaplan gizli">
     <div class="modal-kart topluluk-kart">
       <div class="modal-ust-bar">
-        <h3>👥 Çalışma Odası</h3>
+        <h3>👥 Sessiz Çalışma Odası</h3>
         <button id="toplulukKapatBtn" class="cekmec-kapat">✕</button>
       </div>
-      <p class="topluluk-alt-bilgi">Kullanıcıların tamamladığı toplam odaklanma süreleri:</p>
+      <p class="topluluk-alt-bilgi">Birlikte çalışan topluluk üyelerinin odak süreleri</p>
       <div id="toplulukListesi" class="topluluk-listesi"></div>
     </div>
   </div>
 
-  <!-- BİLDİRİM VE KONFETİ -->
-  <div id="kutlamaKarti" class="kutlama-karti gizli">
-    🎉 Harika iş! Bir görevi daha tamamladın.
-  </div>
-
+  <!-- ALARM VE KUTLAMA BİLDİRİMLERİ -->
   <div id="alarmKarti" class="alarm-karti gizli">
     <div class="alarm-icerik">
       <span class="alarm-zil">⏰</span>
       <div>
-        <h4 id="alarmBaslik">Hatırlatıcı</h4>
-        <p id="alarmZaman">Etkinlik vakti geldi!</p>
+        <strong id="alarmBaslik">Zamanı Geldi!</strong>
+        <p id="alarmZaman" style="font-size:12px;opacity:0.9;"></p>
       </div>
     </div>
-    <button id="alarmKapatBtn" class="alarm-kapat">Tamam</button>
+    <button id="alarmKapatBtn" class="alarm-kapat">Kapat</button>
   </div>
 
-  <canvas id="konfetiTuval" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;"></canvas>
+  <div id="kutlamaKarti" class="kutlama-karti gizli">
+    ✨ Tebrikler! Bir görevi daha tamamladın!
+  </div>
 
   <script src="app.js"></script>
 </body>
