@@ -1,0 +1,15 @@
+{
+  "name": "KaganStudio",
+  "short_name": "KaganStudio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2eaadc",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/906/906334.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
