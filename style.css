@@ -1380,3 +1380,11 @@ body.zen-aktif #zenModuBtn {
     text-align: center;
   }
 }
+.yedek-etiket-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.yedek-etiket-btn input[type="file"] {
+  display: none !important;
+}
