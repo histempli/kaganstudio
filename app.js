@@ -84,10 +84,14 @@ const renkNoktalari = document.querySelectorAll(".renk-noktasi");
 const zenModuBtn = document.getElementById("zenModuBtn");
 const ortamSesiSecim = document.getElementById("ortamSesiSecim");
 
-// Yedekleme DOM
+// Yedekleme & Modal DOM
 const yedekIndirBtn = document.getElementById("yedekIndirBtn");
-const yedekYukleBtn = document.getElementById("yedekYukleBtn");
-const yedekDosyaInput = document.getElementById("yedekDosyaInput");
+const yedekModalAcBtn = document.getElementById("yedekModalAcBtn");
+const yedekModali = document.getElementById("yedekModali");
+const yedekModalKapatBtn = document.getElementById("yedekModalKapatBtn");
+const yedekDosyaSec = document.getElementById("yedekDosyaSec");
+const yedekMetinAlani = document.getElementById("yedekMetinAlani");
+const yedegiUygulaBtn = document.getElementById("yedegiUygulaBtn");
 
 // --- 1. AUTH SİSTEMİ ---
 let authModu = "giris";
@@ -866,68 +870,84 @@ ortamSesiSecim.addEventListener("change", (e) => {
   ortamSesiCal(e.target.value);
 });
 
-// --- 10. KESİN VE SAĞLAM VERİ YEDEKLEME (EXPORT / IMPORT) ---
+// --- 10. SAĞLAM YEDEKLEME & GERİ YÜKLEME (MODAL + METİN/DOSYA) ---
 yedekIndirBtn.addEventListener("click", () => {
   if (!aktifKullanici) return;
 
-  const yedekVerisi = {
+  const veri = {
     kullanici: aktifKullanici,
     tarih: new Date().toISOString(),
     etkinlikler: etkinlikler,
     hesaplar: getHesaplar()
   };
 
-  const blob = new Blob([JSON.stringify(yedekVerisi, null, 2)], { type: "application/json" });
+  const metin = JSON.stringify(veri, null, 2);
+  const blob = new Blob([metin], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const indirBaglanti = document.createElement("a");
-  indirBaglanti.href = url;
-  indirBaglanti.download = `kaganstudio_yedek_${aktifKullanici}.json`;
-  document.body.appendChild(indirBaglanti);
-  indirBaglanti.click();
-  document.body.removeChild(indirBaglanti);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kaganstudio_yedek_${aktifKullanici}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 });
 
-// Doğrudan Native File Change Tetikleyicisi
-const dosyaSecici = document.getElementById("yedekDosyaInput");
-if (dosyaSecici) {
-  dosyaSecici.addEventListener("change", function(e) {
-    const dosya = this.files && this.files[0];
-    if (!dosya) return;
+// Modal Aç/Kapat
+yedekModalAcBtn.addEventListener("click", () => {
+  yedekModali.classList.remove("gizli");
+  yedekMetinAlani.value = "";
+  if (yedekDosyaSec) yedekDosyaSec.value = "";
+});
 
-    const okuyucu = new FileReader();
-    okuyucu.onload = function(olay) {
-      try {
-        const hamIcerik = olay.target.result;
-        const yuklenen = JSON.parse(hamIcerik);
+yedekModalKapatBtn.addEventListener("click", () => {
+  yedekModali.classList.add("gizli");
+});
 
-        if (yuklenen && Array.isArray(yuklenen.etkinlikler)) {
-          etkinlikler = yuklenen.etkinlikler;
-          
-          // Doğrudan kalıcı belleğe mühürle
-          kullaniciVerileriniKaydet();
-
-          if (yuklenen.hesaplar) {
-            const mevcutHesaplar = getHesaplar();
-            hesapKaydet({ ...mevcutHesaplar, ...yuklenen.hesaplar });
-          }
-
-          herSeyiCiz();
-          konfetiVeKutlama();
-          alert("✨ Tebrikler! Verileriniz eksiksiz yüklendi.");
-        } else {
-          alert("⚠️ Hata: Seçilen dosya KaganStudio yedek formatında değil.");
-        }
-      } catch (err) {
-        alert("⚠️ Dosya ayrıştırılamadı: " + err.message);
-      } finally {
-        dosyaSecici.value = ""; // Seçimi sıfırla ki tekrar yüklenebilsin
-      }
+// Dosya seçilirse içeriğini doğrudan metin kutusuna doldurur
+if (yedekDosyaSec) {
+  yedekDosyaSec.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      yedekMetinAlani.value = ev.target.result;
     };
-
-    okuyucu.readAsText(dosya);
+    reader.readAsText(file);
   });
 }
+
+// JSON Verisini Doğrula, Kaydet ve Ekranı Yenile
+yedegiUygulaBtn.addEventListener("click", () => {
+  const icerik = yedekMetinAlani.value.trim();
+  if (!icerik) {
+    alert("Lütfen bir dosya seçin veya kutuya JSON verisini yapıştırın.");
+    return;
+  }
+
+  try {
+    const parseEdilen = JSON.parse(icerik);
+
+    if (parseEdilen && Array.isArray(parseEdilen.etkinlikler)) {
+      etkinlikler = parseEdilen.etkinlikler;
+      kullaniciVerileriniKaydet();
+
+      if (parseEdilen.hesaplar) {
+        const mevcut = getHesaplar();
+        hesapKaydet({ ...mevcut, ...parseEdilen.hesaplar });
+      }
+
+      herSeyiCiz();
+      konfetiVeKutlama();
+      yedekModali.classList.add("gizli");
+      alert("✨ Verilerin başarıyla yüklendi ve eşitlendi!");
+    } else {
+      alert("Geçersiz yedek formatı: 'etkinlikler' listesi bulunamadı.");
+    }
+  } catch (hata) {
+    alert("JSON ayrıştırma hatası: " + hata.message);
+  }
+});
 
 // Başlangıç Ayarları
 const kayitliPastel = localStorage.getItem("kaganPlanner_pastelRenk") || "sade";
