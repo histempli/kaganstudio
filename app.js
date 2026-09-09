@@ -1,4 +1,9 @@
-// --- AUTH DOM ELEMANLARI ---
+// --- SUPABASE BULUT BAĞLANTISI ---
+const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co";
+const SUPABASE_ANON_KEY = "Sb_publishable_aLejq3WAAhzTpDBxzzjtYQ_sSiwr5A4";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- DOM ELEMANLARI ---
 const authEkrani = document.getElementById("authEkrani");
 const anaUygulamaEkrani = document.getElementById("anaUygulamaEkrani");
 const sekmeGiris = document.getElementById("sekmeGiris");
@@ -11,7 +16,6 @@ const authGonderBtn = document.getElementById("authGonderBtn");
 const profilIsim = document.getElementById("profilIsim");
 const cikisYapBtn = document.getElementById("cikisYapBtn");
 
-// --- UYGULAMA DOM ELEMANLARI ---
 const etkinlikBaslik = document.getElementById("etkinlikBaslik");
 const etkinlikTarih = document.getElementById("etkinlikTarih");
 const etkinlikSaat = document.getElementById("etkinlikSaat");
@@ -61,28 +65,13 @@ const pomoSureAyarlaBtn = document.getElementById("pomoSureAyarlaBtn");
 const pomoBaslatBtn = document.getElementById("pomoBaslatBtn");
 const pomoSifirlaBtn = document.getElementById("pomoSifirlaBtn");
 
-// Topluluk & Farkındalık
+// Topluluk
 const toplulukBtn = document.getElementById("toplulukBtn");
 const uyariModali = document.getElementById("uyariModali");
 const uyariOnaylaBtn = document.getElementById("uyariOnaylaBtn");
 const toplulukModali = document.getElementById("toplulukModali");
 const toplulukKapatBtn = document.getElementById("toplulukKapatBtn");
 const toplulukListesi = document.getElementById("toplulukListesi");
-
-// Bildirim & Alarm & Tema
-const bildirimIzinBtn = document.getElementById("bildirimIzinBtn");
-const alarmKarti = document.getElementById("alarmKarti");
-const alarmBaslik = document.getElementById("alarmBaslik");
-const alarmZaman = document.getElementById("alarmZaman");
-const alarmKapatBtn = document.getElementById("alarmKapatBtn");
-
-const temaBtn = document.getElementById("temaBtn");
-const temaIkon = document.getElementById("temaIkon");
-const renkNoktalari = document.querySelectorAll(".renk-noktasi");
-
-// Zen & Ortam Sesleri
-const zenModuBtn = document.getElementById("zenModuBtn");
-const ortamSesiSecim = document.getElementById("ortamSesiSecim");
 
 // Yedekleme & Modal DOM
 const yedekIndirBtn = document.getElementById("yedekIndirBtn");
@@ -93,19 +82,25 @@ const yedekDosyaSec = document.getElementById("yedekDosyaSec");
 const yedekMetinAlani = document.getElementById("yedekMetinAlani");
 const yedegiUygulaBtn = document.getElementById("yedegiUygulaBtn");
 
-// --- 1. AUTH SİSTEMİ ---
+// Bildirim & Alarm & Tema & Zen
+const bildirimIzinBtn = document.getElementById("bildirimIzinBtn");
+const alarmKarti = document.getElementById("alarmKarti");
+const alarmBaslik = document.getElementById("alarmBaslik");
+const alarmZaman = document.getElementById("alarmZaman");
+const alarmKapatBtn = document.getElementById("alarmKapatBtn");
+const temaBtn = document.getElementById("temaBtn");
+const temaIkon = document.getElementById("temaIkon");
+const renkNoktalari = document.querySelectorAll(".renk-noktasi");
+const zenModuBtn = document.getElementById("zenModuBtn");
+const ortamSesiSecim = document.getElementById("ortamSesiSecim");
+
+// --- DURUM DEĞİŞKENLERİ ---
 let authModu = "giris";
 let aktifKullanici = null;
 let etkinlikler = [];
 let aktifSeciliEtkinlikId = null;
 
-function getHesaplar() {
-  return JSON.parse(localStorage.getItem("kaganPlanner_hesaplar")) || {};
-}
-function hesapKaydet(hesaplar) {
-  localStorage.setItem("kaganPlanner_hesaplar", JSON.stringify(hesaplar));
-}
-
+// --- 1. BULUT KULLANICI İŞLEMLERİ (AUTH) ---
 sekmeGiris.addEventListener("click", () => {
   authModu = "giris";
   sekmeGiris.classList.add("aktif");
@@ -132,7 +127,7 @@ function mesajGoster(metin, tur) {
   authMesaj.textContent = metin;
 }
 
-authForm.addEventListener("submit", (e) => {
+authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const ad = kullaniciAdi.value.trim().toLowerCase();
   const sifre = kullaniciSifre.value.trim();
@@ -142,30 +137,65 @@ authForm.addEventListener("submit", (e) => {
     return;
   }
 
-  const hesaplar = getHesaplar();
+  authGonderBtn.disabled = true;
+  authGonderBtn.textContent = "Bağlanıyor...";
 
-  if (authModu === "kayit") {
-    if (hesaplar[ad]) {
-      mesajGoster("Bu kullanıcı adı zaten alınmış!", "hata");
-      return;
+  try {
+    if (authModu === "kayit") {
+      const { data: mevcut } = await supabase
+        .from("profiller")
+        .select("kullanici_adi")
+        .eq("kullanici_adi", ad)
+        .maybeSingle();
+
+      if (mevcut) {
+        mesajGoster("Bu kullanıcı adı zaten alınmış!", "hata");
+        authGonderBtn.disabled = false;
+        authGonderBtn.textContent = "Yeni Hesap Oluştur";
+        return;
+      }
+
+      const { error } = await supabase
+        .from("profiller")
+        .insert([{ kullanici_adi: ad, sifre: sifre, calisilan_dakika: 0 }]);
+
+      if (error) throw error;
+
+      mesajGoster("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.", "basari");
+      setTimeout(() => {
+        sekmeGiris.click();
+        kullaniciSifre.value = "";
+      }, 1200);
+    } else {
+      const { data: profil, error } = await supabase
+        .from("profiller")
+        .select("*")
+        .eq("kullanici_adi", ad)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!profil) {
+        mesajGoster("Kullanıcı bulunamadı! Önce kayıt olun.", "hata");
+        authGonderBtn.disabled = false;
+        authGonderBtn.textContent = "Giriş Yap";
+        return;
+      }
+
+      if (profil.sifre !== sifre) {
+        mesajGoster("Hatalı şifre girdiniz!", "hata");
+        authGonderBtn.disabled = false;
+        authGonderBtn.textContent = "Giriş Yap";
+        return;
+      }
+
+      girisBasarili(ad);
     }
-    hesaplar[ad] = { sifre: sifre, calisilanDakika: 0 };
-    hesapKaydet(hesaplar);
-    mesajGoster("Hesap başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.", "basari");
-    setTimeout(() => {
-      sekmeGiris.click();
-      kullaniciSifre.value = "";
-    }, 1200);
-  } else {
-    if (!hesaplar[ad]) {
-      mesajGoster("Kullanıcı bulunamadı! Önce kayıt olun.", "hata");
-      return;
-    }
-    if (hesaplar[ad].sifre !== sifre) {
-      mesajGoster("Hatalı şifre girdiniz!", "hata");
-      return;
-    }
-    girisBasarili(ad);
+  } catch (err) {
+    mesajGoster("Bulut hatası: " + err.message, "hata");
+  } finally {
+    authGonderBtn.disabled = false;
+    authGonderBtn.textContent = authModu === "giris" ? "Giriş Yap" : "Yeni Hesap Oluştur";
   }
 });
 
@@ -177,7 +207,7 @@ function girisBasarili(ad) {
   anaUygulamaEkrani.classList.remove("gizli");
 
   profilIsim.textContent = ad;
-  kullaniciVerileriniYukle();
+  buluttanGorevleriYukle();
 }
 
 cikisYapBtn.addEventListener("click", () => {
@@ -194,57 +224,80 @@ cikisYapBtn.addEventListener("click", () => {
   authEkrani.classList.remove("gizli");
 });
 
-// --- 2. KULLANICI VERİ MOTORU ---
-function kullaniciVerileriniYukle() {
+// --- 2. BULUT VERİ SENKRONİZASYONU ---
+async function buluttanGorevleriYukle() {
   if (!aktifKullanici) return;
-  const depoAnahtari = `kaganPlanner_veri_${aktifKullanici}`;
-  const kayitliVeri = localStorage.getItem(depoAnahtari);
 
-  if (kayitliVeri) {
-    try {
-      etkinlikler = JSON.parse(kayitliVeri) || [];
-    } catch (err) {
-      etkinlikler = [];
-    }
-  } else {
-    etkinlikler = [
-      {
-        id: 1,
-        baslik: `${aktifKullanici} için ilk görev`,
-        tarih: gercekBugunStr,
-        saat: "12:00",
-        oncelik: "orta",
-        kategori: "Kişisel",
-        tamamlandi: false,
-        hatirlatildi: false,
-        notlar: "Göreve tıklayarak notlar ve alt görevler ekleyebilirsin.",
-        altGorevler: [
-          { id: 101, metin: "Alt görevleri dene", tamamlandi: true },
-          { id: 102, metin: "Pastel renkleri ve Zen modunu keşfet", tamamlandi: false }
-        ]
-      }
-    ];
-    kullaniciVerileriniKaydet();
+  const { data, error } = await supabase
+    .from("gorevler")
+    .select("*")
+    .eq("kullanici_adi", aktifKullanici)
+    .order("olusturuldu", { ascending: false });
+
+  if (error) {
+    console.error("Görevler alınamadı:", error);
+    return;
   }
+
+  etkinlikler = (data || []).map(g => ({
+    id: g.id,
+    baslik: g.baslik,
+    tarih: g.tarih,
+    saat: g.saat || "",
+    oncelik: g.oncelik || "orta",
+    kategori: g.kategori || "Genel",
+    tamamlandi: g.tamamlandi || false,
+    notlar: g.notlar || "",
+    altGorevler: g.alt_gorevler || []
+  }));
+
   herSeyiCiz();
 }
 
-function kullaniciVerileriniKaydet() {
-  if (!aktifKullanici) return;
-  const depoAnahtari = `kaganPlanner_veri_${aktifKullanici}`;
-  localStorage.setItem(depoAnahtari, JSON.stringify(etkinlikler));
+async function bulutaGorevEkle(gorev) {
+  await supabase.from("gorevler").insert([{
+    id: gorev.id,
+    kullanici_adi: aktifKullanici,
+    baslik: gorev.baslik,
+    tarih: gorev.tarih,
+    saat: gorev.saat,
+    oncelik: gorev.oncelik,
+    kategori: gorev.kategori,
+    tamamlandi: gorev.tamamlandi,
+    notlar: gorev.notlar,
+    alt_gorevler: gorev.altGorevler
+  }]);
 }
 
-function kullaniciyaDakikaEkle(dk) {
-  if (!aktifKullanici) return;
-  const hesaplar = getHesaplar();
-  if (hesaplar[aktifKullanici]) {
-    hesaplar[aktifKullanici].calisilanDakika = (hesaplar[aktifKullanici].calisilanDakika || 0) + dk;
-    hesapKaydet(hesaplar);
-  }
+async function buluttaGorevGuncelle(id, veriler) {
+  const guncelle = {};
+  if (veriler.tamamlandi !== undefined) guncelle.tamamlandi = veriler.tamamlandi;
+  if (veriler.notlar !== undefined) guncelle.notlar = veriler.notlar;
+  if (veriler.altGorevler !== undefined) guncelle.alt_gorevler = veriler.altGorevler;
+
+  await supabase.from("gorevler").update(guncelle).eq("id", id);
 }
 
-// --- 3. TARİH VE TAKVİM MOTORU ---
+async function buluttanGorevSil(id) {
+  await supabase.from("gorevler").delete().eq("id", id);
+}
+
+async function bulutaDakikaEkle(dk) {
+  if (!aktifKullanici) return;
+  const { data } = await supabase
+    .from("profiller")
+    .select("calisilan_dakika")
+    .eq("kullanici_adi", aktifKullanici)
+    .single();
+
+  const yeni = ((data && data.calisilan_dakika) || 0) + dk;
+  await supabase
+    .from("profiller")
+    .update({ calisilan_dakika: yeni })
+    .eq("kullanici_adi", aktifKullanici);
+}
+
+// --- 3. TAKVİM VE LİSTE ÇİZİM MOTORU ---
 let gecerliTarih = new Date();
 const gercekBugunStr = `${gecerliTarih.getFullYear()}-${String(gecerliTarih.getMonth() + 1).padStart(2, '0')}-${String(gecerliTarih.getDate()).padStart(2, '0')}`;
 if (etkinlikTarih) etkinlikTarih.value = gercekBugunStr;
@@ -270,11 +323,10 @@ function altGorevRozetiUret(altlar, mini = false) {
   return `<span class="alt-gorev-rozet ${hepsi ? 'tamami-bitti' : ''} ${mini ? 'mini' : ''}">☑ ${biten}/${altlar.length}</span>`;
 }
 
-// 3A. Liste
 function listeCiz() {
   listeKapsayici.innerHTML = "";
   if (etkinlikler.length === 0) {
-    listeKapsayici.innerHTML = `<div style="text-align:center;padding:24px;color:var(--yazi-ikincil);font-size:14px;">Henüz eklenmiş bir görev bulunmuyor.</div>`;
+    listeKapsayici.innerHTML = `<div style="text-align:center;padding:24px;color:var(--yazi-ikincil);font-size:14px;">Henüz bulutta kayıtlı görev bulunmuyor.</div>`;
     return;
   }
 
@@ -299,37 +351,31 @@ function listeCiz() {
       cekmeceyiAc(e.id);
     });
 
-    satir.querySelector("input").addEventListener("change", (ev) => {
+    satir.querySelector("input").addEventListener("change", async (ev) => {
       e.tamamlandi = ev.target.checked;
-      
       if (e.altGorevler && e.altGorevler.length > 0) {
-        e.altGorevler.forEach(alt => {
-          alt.tamamlandi = e.tamamlandi;
-        });
+        e.altGorevler.forEach(alt => { alt.tamamlandi = e.tamamlandi; });
       }
 
       if (e.tamamlandi) konfetiVeKutlama();
-      kullaniciVerileriniKaydet();
       herSeyiCiz();
 
-      if (aktifSeciliEtkinlikId === e.id) {
-        altGorevleriCiz(e);
-      }
+      await buluttaGorevGuncelle(e.id, { tamamlandi: e.tamamlandi, altGorevler: e.altGorevler });
+      if (aktifSeciliEtkinlikId === e.id) altGorevleriCiz(e);
     });
 
-    satir.querySelector(".sil").addEventListener("click", (ev) => {
+    satir.querySelector(".sil").addEventListener("click", async (ev) => {
       ev.stopPropagation();
       etkinlikler = etkinlikler.filter(item => item.id !== e.id);
-      kullaniciVerileriniKaydet();
       if (aktifSeciliEtkinlikId === e.id) cekmeceyiKapat();
       herSeyiCiz();
+      await buluttanGorevSil(e.id);
     });
 
     listeKapsayici.appendChild(satir);
   });
 }
 
-// 3B. Haftalık
 const gunAdlari = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 function haftalikCiz() {
   haftalikGrid.innerHTML = "";
@@ -371,7 +417,6 @@ sonrakiHaftaBtn.addEventListener("click", () => {
   haftalikCiz();
 });
 
-// 3C. Aylık
 function aylikCiz() {
   aylikGrid.innerHTML = "";
   const ayGosterimTarihi = new Date(seciliYil, seciliAy, 1);
@@ -448,12 +493,12 @@ function cekmeceyiKapat() {
 cekmecKapatBtn.addEventListener("click", cekmeceyiKapat);
 cekmecArkaplan.addEventListener("click", cekmeceyiKapat);
 
-cekmeceNotlar.addEventListener("input", () => {
+cekmeceNotlar.addEventListener("change", async () => {
   if (!aktifSeciliEtkinlikId) return;
   const e = etkinlikler.find(item => item.id === aktifSeciliEtkinlikId);
   if (e) {
     e.notlar = cekmeceNotlar.value;
-    kullaniciVerileriniKaydet();
+    await buluttaGorevGuncelle(e.id, { notlar: e.notlar });
   }
 });
 
@@ -474,9 +519,8 @@ function altGorevleriCiz(e) {
       <button class="alt-sil-btn">✕</button>
     `;
 
-    item.querySelector("input").addEventListener("change", (ev) => {
+    item.querySelector("input").addEventListener("change", async (ev) => {
       alt.tamamlandi = ev.target.checked;
-
       const tumuBitti = e.altGorevler.every(a => a.tamamlandi);
       if (tumuBitti && !e.tamamlandi) {
         e.tamamlandi = true;
@@ -485,23 +529,23 @@ function altGorevleriCiz(e) {
         e.tamamlandi = false;
       }
 
-      kullaniciVerileriniKaydet();
       altGorevleriCiz(e);
       herSeyiCiz();
+      await buluttaGorevGuncelle(e.id, { tamamlandi: e.tamamlandi, altGorevler: e.altGorevler });
     });
 
-    item.querySelector(".alt-sil-btn").addEventListener("click", () => {
+    item.querySelector(".alt-sil-btn").addEventListener("click", async () => {
       e.altGorevler = e.altGorevler.filter(a => a.id !== alt.id);
-      kullaniciVerileriniKaydet();
       altGorevleriCiz(e);
       herSeyiCiz();
+      await buluttaGorevGuncelle(e.id, { altGorevler: e.altGorevler });
     });
 
     altGorevListesi.appendChild(item);
   });
 }
 
-function yeniAltGorevEkle() {
+async function yeniAltGorevEkle() {
   if (!aktifSeciliEtkinlikId) return;
   const metin = altGorevInput.value.trim();
   if (!metin) return;
@@ -515,20 +559,14 @@ function yeniAltGorevEkle() {
     tamamlandi: false
   });
 
-  if (e.tamamlandi) {
-    e.tamamlandi = false;
-  }
-
   altGorevInput.value = "";
-  kullaniciVerileriniKaydet();
   altGorevleriCiz(e);
   herSeyiCiz();
+  await buluttaGorevGuncelle(e.id, { altGorevler: e.altGorevler });
 }
 
 altGorevEkleBtn.addEventListener("click", yeniAltGorevEkle);
-altGorevInput.addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") yeniAltGorevEkle();
-});
+altGorevInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") yeniAltGorevEkle(); });
 
 // --- 5. POMODORO ---
 let pomoDakika = 25;
@@ -572,7 +610,7 @@ function pomoBaslatDurdur() {
   } else {
     pomoCalisiyor = true;
     pomoBaslatBtn.textContent = "Duraklat";
-    pomoZamanlayici = setInterval(() => {
+    pomoZamanlayici = setInterval(async () => {
       pomoKalan--;
       pomoGuncelle();
 
@@ -581,10 +619,10 @@ function pomoBaslatDurdur() {
         pomoCalisiyor = false;
         pomoBaslatBtn.textContent = "Başlat";
 
-        kullaniciyaDakikaEkle(pomoDakika);
+        await bulutaDakikaEkle(pomoDakika);
 
         konfetiVeKutlama();
-        alarmTetikle("🍅 Pomodoro Süresi Doldu!", `Tebrikler! ${pomoDakika} dakikalık odak seansını tamamladın.`);
+        alarmTetikle("🍅 Pomodoro Tamamlandı!", `Tebrikler! ${pomoDakika} dakikalık odak seansını tamamladın.`);
         pomoSifirla();
       }
     }, 1000);
@@ -602,7 +640,7 @@ function pomoSifirla() {
 pomoBaslatBtn.addEventListener("click", pomoBaslatDurdur);
 pomoSifirlaBtn.addEventListener("click", pomoSifirla);
 
-// --- 6. TOPLULUK & FARKINDALIK ---
+// --- 6. GERÇEK CANLI TOPLULUK ODASI ---
 toplulukBtn.addEventListener("click", () => {
   uyariModali.classList.remove("gizli");
 });
@@ -617,39 +655,34 @@ toplulukKapatBtn.addEventListener("click", () => {
   toplulukModali.classList.add("gizli");
 });
 
-function toplulukTablosunuCiz() {
-  toplulukListesi.innerHTML = "";
-  const hesaplar = getHesaplar();
-  const liste = [];
+async function toplulukTablosunuCiz() {
+  toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--yazi-ikincil);padding:10px;">Buluttan yükleniyor...</div>`;
 
-  for (let kullanici in hesaplar) {
-    liste.push({
-      ad: kullanici,
-      dakika: hesaplar[kullanici].calisilanDakika || 0
-    });
-  }
+  const { data: profiller, error } = await supabase
+    .from("profiller")
+    .select("kullanici_adi, calisilan_dakika")
+    .order("calisilan_dakika", { ascending: false });
 
-  liste.sort((a, b) => b.dakika - a.dakika);
-
-  if (liste.length === 0) {
-    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--yazi-ikincil);padding:10px;">Henüz kayıtlı kullanıcı bulunmuyor.</div>`;
+  if (error || !profiller) {
+    toplulukListesi.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--silme-hover);padding:10px;">Liste alınamadı.</div>`;
     return;
   }
 
-  liste.forEach((kisi, sira) => {
-    const saat = (kisi.dakika / 60).toFixed(1);
+  toplulukListesi.innerHTML = "";
+  profiller.forEach((kisi, sira) => {
+    const saat = ((kisi.calisilan_dakika || 0) / 60).toFixed(1);
     const satir = document.createElement("div");
     satir.className = "topluluk-satir";
 
-    const benMiyim = kisi.ad === aktifKullanici ? " (Sen)" : "";
+    const benMiyim = kisi.kullanici_adi === aktifKullanici ? " (Sen)" : "";
 
     satir.innerHTML = `
       <div class="topluluk-sol">
         <span>#${sira + 1}</span>
-        <span>${kisi.ad}${benMiyim}</span>
+        <span>${kisi.kullanici_adi}${benMiyim}</span>
       </div>
       <div class="topluluk-sag">
-        ⏱️ ${kisi.dakika} dk (${saat} sa)
+        ⏱️ ${kisi.calisilan_dakika || 0} dk (${saat} sa)
       </div>
     `;
 
@@ -658,7 +691,7 @@ function toplulukTablosunuCiz() {
 }
 
 // --- 7. YENİ ETKİNLİK EKLEME ---
-function yeniEtkinlikEkle() {
+async function yeniEtkinlikEkle() {
   const baslik = etkinlikBaslik.value.trim();
   if (!baslik) return;
 
@@ -670,16 +703,16 @@ function yeniEtkinlikEkle() {
     oncelik: oncelikSecim.value,
     kategori: kategoriSecim.value,
     tamamlandi: false,
-    hatirlatildi: false,
     notlar: "",
     altGorevler: []
   };
 
-  etkinlikler.push(yeni);
+  etkinlikler.unshift(yeni);
   etkinlikBaslik.value = "";
   etkinlikSaat.value = "";
-  kullaniciVerileriniKaydet();
   herSeyiCiz();
+
+  await bulutaGorevEkle(yeni);
 }
 
 kaydetBtn.addEventListener("click", yeniEtkinlikEkle);
@@ -695,7 +728,6 @@ sekmeButonlari.forEach(btn => {
   });
 });
 
-// İlerleme & Konfeti
 function ilerlemeGuncelle() {
   const toplam = etkinlikler.length;
   const tamamlanan = etkinlikler.filter(e => e.tamamlandi).length;
@@ -717,7 +749,7 @@ function konfetiVeKutlama() {
   const parcalar = [];
   const renkler = ["#38bdf8", "#f472b6", "#4ade80", "#c084fc", "#facc15"];
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 45; i++) {
     parcalar.push({
       x: canvas.width / 2,
       y: canvas.height * 0.7,
@@ -755,44 +787,12 @@ function konfetiVeKutlama() {
   ciz();
 }
 
-// Hatırlatıcı Motoru
-bildirimIzinBtn.addEventListener("click", () => {
-  if ("Notification" in window) {
-    Notification.requestPermission().then(izin => {
-      if (izin === "granted") {
-        bildirimIzinBtn.textContent = "🔔 Açık";
-        bildirimIzinBtn.style.color = "var(--basari)";
-      }
-    });
-  }
-});
-
 function alarmTetikle(baslik, aciklama) {
   alarmBaslik.textContent = baslik;
   alarmZaman.textContent = aciklama;
   alarmKarti.classList.remove("gizli");
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("KaganStudio ⏰ " + baslik, { body: aciklama });
-  }
 }
-
 alarmKapatBtn.addEventListener("click", () => alarmKarti.classList.add("gizli"));
-
-setInterval(() => {
-  if (!aktifKullanici) return;
-  const d = new Date();
-  const buTarih = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const buSaat = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-
-  etkinlikler.forEach(e => {
-    if (!e.tamamlandi && !e.hatirlatildi && e.tarih === buTarih && e.saat === buSaat) {
-      alarmTetikle(e.baslik, `Saat: ${e.saat} | Zamanı geldi!`);
-      e.hatirlatildi = true;
-      kullaniciVerileriniKaydet();
-    }
-  });
-}, 10000);
 
 // --- 8. TEMA MOTORU ---
 function pastelRenkUygula(renk) {
@@ -800,18 +800,12 @@ function pastelRenkUygula(renk) {
   localStorage.setItem("kaganPlanner_pastelRenk", renk);
 
   renkNoktalari.forEach(nokta => {
-    if (nokta.dataset.renk === renk) {
-      nokta.classList.add("aktif");
-    } else {
-      nokta.classList.remove("aktif");
-    }
+    nokta.classList.toggle("aktif", nokta.dataset.renk === renk);
   });
 }
 
 renkNoktalari.forEach(nokta => {
-  nokta.addEventListener("click", () => {
-    pastelRenkUygula(nokta.dataset.renk);
-  });
+  nokta.addEventListener("click", () => pastelRenkUygula(nokta.dataset.renk));
 });
 
 function temaUygula(t) {
@@ -854,57 +848,54 @@ function ortamSesiCal(tur) {
     aktifAudio.currentTime = 0;
     aktifAudio = null;
   }
-
   if (tur === "kapali" || !sesDosyalari[tur]) return;
 
   aktifAudio = new Audio(sesDosyalari[tur]);
   aktifAudio.loop = true;
   aktifAudio.volume = 0.45;
+  aktifAudio.play().catch(e => console.log("Ses oynatılamadı:", e));
+}
 
-  aktifAudio.play().catch(err => {
-    console.warn("Otomatik ses oynatılamadı:", err);
+ortamSesiSecim.addEventListener("change", (e) => ortamSesiCal(e.target.value));
+
+// --- 10. YEDEKLEME VE GERİ YÜKLEME (BULUT DESTEKLİ MODAL) ---
+if (yedekIndirBtn) {
+  yedekIndirBtn.addEventListener("click", () => {
+    if (!aktifKullanici) return;
+
+    const veri = {
+      kullanici: aktifKullanici,
+      tarih: new Date().toISOString(),
+      etkinlikler: etkinlikler
+    };
+
+    const metin = JSON.stringify(veri, null, 2);
+    const blob = new Blob([metin], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kaganstudio_yedek_${aktifKullanici}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   });
 }
 
-ortamSesiSecim.addEventListener("change", (e) => {
-  ortamSesiCal(e.target.value);
-});
+if (yedekModalAcBtn) {
+  yedekModalAcBtn.addEventListener("click", () => {
+    yedekModali.classList.remove("gizli");
+    yedekMetinAlani.value = "";
+    if (yedekDosyaSec) yedekDosyaSec.value = "";
+  });
+}
 
-// --- 10. SAĞLAM YEDEKLEME & GERİ YÜKLEME (MODAL + METİN/DOSYA) ---
-yedekIndirBtn.addEventListener("click", () => {
-  if (!aktifKullanici) return;
+if (yedekModalKapatBtn) {
+  yedekModalKapatBtn.addEventListener("click", () => {
+    yedekModali.classList.add("gizli");
+  });
+}
 
-  const veri = {
-    kullanici: aktifKullanici,
-    tarih: new Date().toISOString(),
-    etkinlikler: etkinlikler,
-    hesaplar: getHesaplar()
-  };
-
-  const metin = JSON.stringify(veri, null, 2);
-  const blob = new Blob([metin], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `kaganstudio_yedek_${aktifKullanici}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
-
-// Modal Aç/Kapat
-yedekModalAcBtn.addEventListener("click", () => {
-  yedekModali.classList.remove("gizli");
-  yedekMetinAlani.value = "";
-  if (yedekDosyaSec) yedekDosyaSec.value = "";
-});
-
-yedekModalKapatBtn.addEventListener("click", () => {
-  yedekModali.classList.add("gizli");
-});
-
-// Dosya seçilirse içeriğini doğrudan metin kutusuna doldurur
 if (yedekDosyaSec) {
   yedekDosyaSec.addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -917,41 +908,43 @@ if (yedekDosyaSec) {
   });
 }
 
-// JSON Verisini Doğrula, Kaydet ve Ekranı Yenile
-yedegiUygulaBtn.addEventListener("click", () => {
-  const icerik = yedekMetinAlani.value.trim();
-  if (!icerik) {
-    alert("Lütfen bir dosya seçin veya kutuya JSON verisini yapıştırın.");
-    return;
-  }
-
-  try {
-    const parseEdilen = JSON.parse(icerik);
-
-    if (parseEdilen && Array.isArray(parseEdilen.etkinlikler)) {
-      etkinlikler = parseEdilen.etkinlikler;
-      kullaniciVerileriniKaydet();
-
-      if (parseEdilen.hesaplar) {
-        const mevcut = getHesaplar();
-        hesapKaydet({ ...mevcut, ...parseEdilen.hesaplar });
-      }
-
-      herSeyiCiz();
-      konfetiVeKutlama();
-      yedekModali.classList.add("gizli");
-      alert("✨ Verilerin başarıyla yüklendi ve eşitlendi!");
-    } else {
-      alert("Geçersiz yedek formatı: 'etkinlikler' listesi bulunamadı.");
+if (yedegiUygulaBtn) {
+  yedegiUygulaBtn.addEventListener("click", async () => {
+    const icerik = yedekMetinAlani.value.trim();
+    if (!icerik) {
+      alert("Lütfen bir dosya seçin veya kutuya JSON verisini yapıştırın.");
+      return;
     }
-  } catch (hata) {
-    alert("JSON ayrıştırma hatası: " + hata.message);
-  }
-});
+
+    try {
+      const parseEdilen = JSON.parse(icerik);
+
+      if (parseEdilen && Array.isArray(parseEdilen.etkinlikler)) {
+        yedegiUygulaBtn.disabled = true;
+        yedegiUygulaBtn.textContent = "Buluta Yazılıyor...";
+
+        for (const g of parseEdilen.etkinlikler) {
+          await bulutaGorevEkle(g);
+        }
+
+        await buluttanGorevleriYukle();
+        konfetiVeKutlama();
+        yedekModali.classList.add("gizli");
+        alert("✨ Verilerin başarıyla buluta yüklendi ve senkronize edildi!");
+      } else {
+        alert("Geçersiz yedek formatı: 'etkinlikler' dizisi bulunamadı.");
+      }
+    } catch (hata) {
+      alert("JSON ayrıştırma hatası: " + hata.message);
+    } finally {
+      yedegiUygulaBtn.disabled = false;
+      yedegiUygulaBtn.textContent = "Verileri İçeri Aktar ve Eşitle";
+    }
+  });
+}
 
 // Başlangıç Ayarları
-const kayitliPastel = localStorage.getItem("kaganPlanner_pastelRenk") || "sade";
-pastelRenkUygula(kayitliPastel);
+pastelRenkUygula(localStorage.getItem("kaganPlanner_pastelRenk") || "sade");
 temaUygula(localStorage.getItem("kaganPlannerTema") || "light");
 
 const acikOturum = localStorage.getItem("kaganPlanner_oturum");
