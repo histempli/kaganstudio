@@ -1,4 +1,4 @@
-// --- DOĞRUDAN REST API MOTORU (KÜTÜPHANESİZ & KIRILMAZ) ---
+// --- DOĞRUDAN REST API MOTORU (KÜTÜPHANESİZ & GÜVENLİ) ---
 const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co/rest/v1";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
 
@@ -31,6 +31,7 @@ const kullaniciAdi = document.getElementById("kullaniciAdi");
 const kullaniciSifre = document.getElementById("kullaniciSifre");
 const authGonderBtn = document.getElementById("authGonderBtn");
 const profilIsim = document.getElementById("profilIsim");
+const sifreDegistirBtn = document.getElementById("sifreDegistirBtn");
 const cikisYapBtn = document.getElementById("cikisYapBtn");
 
 const etkinlikBaslik = document.getElementById("etkinlikBaslik");
@@ -110,6 +111,12 @@ let aktifKullanici = null;
 let etkinlikler = [];
 let aktifSeciliEtkinlikId = null;
 
+// Şifre Güvenlik Kuralı Kontrolü (En az 8 karakter, 1 büyük harf, 1 rakam)
+function sifreGuvenliMi(sifre) {
+  const regex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+  return regex.test(sifre);
+}
+
 // --- 1. AUTH İŞLEMLERİ ---
 sekmeGiris.addEventListener("click", () => {
   authModu = "giris";
@@ -137,13 +144,7 @@ function mesajGoster(metin, tur) {
   authMesaj.textContent = metin;
 }
 
-const // Şifre Güvenlik Kontrolü Fonksiyonu
-function sifreGuvenliMi(sifre) {
-  // En az 8 karakter, en az 1 büyük harf, en az 1 rakam
-  const regex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-  return regex.test(sifre);
-}
-authIslemiYap = async () => {
+const authIslemiYap = async () => {
   const ad = kullaniciAdi.value.trim().toLowerCase();
   const sifre = kullaniciSifre.value.trim();
 
@@ -157,6 +158,14 @@ authIslemiYap = async () => {
 
   try {
     if (authModu === "kayit") {
+      // Şifre güvenlik kuralı kontrolü
+      if (!sifreGuvenliMi(sifre)) {
+        mesajGoster("Şifre en az 8 karakter olmalı, en az 1 büyük harf ve 1 rakam içermelidir!", "hata");
+        authGonderBtn.disabled = false;
+        authGonderBtn.textContent = "Yeni Hesap Oluştur";
+        return;
+      }
+
       // Kullanıcı kontrolü
       const mevcutlar = await bulutIstek("profiller", "GET", null, `kullanici_adi=eq.${ad}&select=kullanici_adi`);
       if (mevcutlar && mevcutlar.length > 0) {
@@ -185,7 +194,6 @@ authIslemiYap = async () => {
     }
   } catch (err) {
     mesajGoster("Bulut Hatası: " + err.message, "hata");
-    alert("Bağlantı Hatası: " + err.message);
   } finally {
     authGonderBtn.disabled = false;
     authGonderBtn.textContent = authModu === "giris" ? "Giriş Yap" : "Yeni Hesap Oluştur";
@@ -204,6 +212,28 @@ function girisBasarili(ad) {
 
   profilIsim.textContent = ad;
   buluttanGorevleriYukle();
+}
+
+// Şifre Değiştirme Butonu Dinleyicisi
+if (sifreDegistirBtn) {
+  sifreDegistirBtn.addEventListener("click", async () => {
+    if (!aktifKullanici) return;
+
+    const yeniSifre = prompt("Yeni şifrenizi girin (En az 8 karakter, 1 büyük harf, 1 rakam):");
+    if (!yeniSifre) return;
+
+    if (!sifreGuvenliMi(yeniSifre)) {
+      alert("⚠️ Yeni şifre kurallara uymuyor: En az 8 karakter, 1 büyük harf ve 1 rakam içermelidir!");
+      return;
+    }
+
+    try {
+      await bulutIstek("profiller", "PATCH", { sifre: yeniSifre }, `kullanici_adi=eq.${aktifKullanici}`);
+      alert("✅ Şifreniz başarıyla güncellendi!");
+    } catch (err) {
+      alert("Şifre güncellenemedi: " + err.message);
+    }
+  });
 }
 
 cikisYapBtn.addEventListener("click", () => {
