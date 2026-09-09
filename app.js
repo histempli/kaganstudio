@@ -820,7 +820,7 @@ zenModuBtn.addEventListener("click", () => {
 // Gerçek yüksek kaliteli (HQ) ortam ses akışları
 const sesDosyalari = {
   yagmur: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
-  somine: "https://actions.google.com/sounds/v1/ambiences/fireplace.ogg",
+  somine: "https://actions.google.com/sounds/v1/ambiences/fire.ogg",
   kafe: "https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg"
 };
 
