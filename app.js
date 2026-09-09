@@ -1,6 +1,6 @@
 // --- SUPABASE BULUT BAĞLANTISI ---
 const SUPABASE_URL = "https://fgporvouqslgiluuvruw.supabase.co";
-const SUPABASE_ANON_KEY = "Sb_publishable_aLejq3WAAhzTpDBxzzjtYQ_sSiwr5A4";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncG9ydm91cXNsZ2lsdXV2cnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjI5NTAsImV4cCI6MjEwNDUzODk1MH0.OA30InLbNsC5hwbXy43EO7LK7FRsdNYQUj2uueQ0j0o";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM ELEMANLARI ---
