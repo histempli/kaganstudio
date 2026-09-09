@@ -989,3 +989,19 @@ if (acikOturum && acikToken && acikUid) {
   profilIsim.textContent = acikOturum;
   buluttanGorevleriYukle();
 }
+// --- AYARLAR MENÜSÜ İŞLEVİ ---
+const ayarMenuAcBtn = document.getElementById("ayarMenuAcBtn");
+const ayarMenusu = document.getElementById("ayarMenusu");
+
+if (ayarMenuAcBtn && ayarMenusu) {
+  ayarMenuAcBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    ayarMenusu.classList.toggle("gizli");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!ayarMenusu.contains(e.target) && e.target !== ayarMenuAcBtn) {
+      ayarMenusu.classList.add("gizli");
+    }
+  });
+}
