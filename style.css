@@ -1477,13 +1477,55 @@ body.zen-aktif #zenModuBtn {
 }
 /* AYARLAR MENÜSÜ - MOBİL VE TABLET TAŞMA ÇÖZÜMÜ */
 @media (max-width: 900px) {
-  .ayar-acilir-menu {
-    position: fixed !important;
-    top: 70px !important;
-    right: 12px !important;
-    left: auto !important;
-    width: calc(100vw - 24px) !important;
-    max-width: 320px !important;
-    z-index: 999999 !important;
-  }
+ /* AYARLAR AÇILIR MENÜSÜ - KAYDIRILABİLİR YAPI */
+.ayar-acilir-menu {
+  position: fixed;
+  top: 70px;
+  right: 12px;
+  width: 260px;
+  max-height: calc(100vh - 90px); /* Ekran boyunu aşmaz */
+  overflow-y: auto;               /* İçerik taşarsa kaydırma çubuğu çıkar */
+  background-color: var(--bg-kart);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--kenarlik);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Scrollbar tasarımı (Şık ve ince görünüm) */
+.ayar-acilir-menu::-webkit-scrollbar {
+  width: 5px;
+}
+.ayar-acilir-menu::-webkit-scrollbar-thumb {
+  background-color: var(--kenarlik);
+  border-radius: 4px;
+}
+
+.ayar-baslik {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--yazi-ikincil);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.ayar-satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ayar-cizgi {
+  height: 1px;
+  background-color: var(--kenarlik);
+  margin: 4px 0;
 }
