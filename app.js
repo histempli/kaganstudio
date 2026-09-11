@@ -32,11 +32,16 @@ const authEkrani = document.getElementById("authEkrani");
 const anaUygulamaEkrani = document.getElementById("anaUygulamaEkrani");
 const authMesaj = document.getElementById("authMesaj");
 const kullaniciAdi = document.getElementById("kullaniciAdi");
+const kullaniciEmail = document.getElementById("kullaniciEmail");
 const kullaniciSifre = document.getElementById("kullaniciSifre");
 const authGonderBtn = document.getElementById("authGonderBtn");
 const profilIsim = document.getElementById("profilIsim");
 const sifreDegistirBtn = document.getElementById("sifreDegistirBtn");
 const cikisYapBtn = document.getElementById("cikisYapBtn");
+const sifremiUnuttumBtn = document.getElementById("sifremiUnuttumBtn");
+const emailGrup = document.getElementById("emailGrup");
+const sekmeGiris = document.getElementById("sekmeGiris");
+const sekmeKayit = document.getElementById("sekmeKayit");
 
 const etkinlikBaslik = document.getElementById("etkinlikBaslik");
 const etkinlikTarih = document.getElementById("etkinlikTarih");
@@ -122,21 +127,27 @@ function sifreGuvenliMi(sifre) {
 }
 
 // --- 1. AUTH İŞLEMLERİ ---
-sekmeGiris.addEventListener("click", () => {
-  authModu = "giris";
-  sekmeGiris.classList.add("aktif");
-  sekmeKayit.classList.remove("aktif");
-  authGonderBtn.textContent = "Giriş Yap";
-  mesajGoster("", "");
-});
+if (sekmeGiris && sekmeKayit) {
+  sekmeGiris.addEventListener("click", () => {
+    authModu = "giris";
+    sekmeGiris.classList.add("aktif");
+    sekmeKayit.classList.remove("aktif");
+    if (emailGrup) emailGrup.classList.add("gizli");
+    if (sifremiUnuttumBtn) sifremiUnuttumBtn.classList.remove("gizli");
+    authGonderBtn.textContent = "Giriş Yap";
+    mesajGoster("", "");
+  });
 
-sekmeKayit.addEventListener("click", () => {
-  authModu = "kayit";
-  sekmeKayit.classList.add("aktif");
-  sekmeGiris.classList.remove("aktif");
-  authGonderBtn.textContent = "Yeni Hesap Oluştur";
-  mesajGoster("", "");
-});
+  sekmeKayit.addEventListener("click", () => {
+    authModu = "kayit";
+    sekmeKayit.classList.add("aktif");
+    sekmeGiris.classList.remove("aktif");
+    if (emailGrup) emailGrup.classList.remove("gizli");
+    if (sifremiUnuttumBtn) sifremiUnuttumBtn.classList.add("gizli");
+    authGonderBtn.textContent = "Yeni Hesap Oluştur";
+    mesajGoster("", "");
+  });
+}
 
 function mesajGoster(metin, tur) {
   if (!metin) {
@@ -161,25 +172,21 @@ const authIslemiYap = async () => {
   authGonderBtn.textContent = "İşleniyor...";
 
   try {
-    const sahteEmail = `${ad}@kaganstudio.local`;
-
     if (authModu === "kayit") {
+      const epostaDegeri = kullaniciEmail ? kullaniciEmail.value.trim() : "";
+      if (!epostaDegeri) {
+        throw new Error("Lütfen geçerli bir e-posta adresi girin.");
+      }
+
       if (!sifreGuvenliMi(sifre)) {
-        mesajGoster("Şifre en az 8 karakter olmalı, en az 1 büyük harf ve 1 rakam içermelidir!", "hata");
-        authGonderBtn.disabled = false;
-        authGonderBtn.textContent = "Yeni Hesap Oluştur";
-        return;
+        throw new Error("Şifre en az 8 karakter olmalı, en az 1 büyük harf ve 1 rakam içermelidir!");
       }
 
       // Supabase Auth SignUp
       const res = await fetch(`${SUPABASE_AUTH_URL}/signup`, {
-        // Kayıt olma işleminde e-posta kullanım örneği:
-const epostaDegeri = document.getElementById("kullaniciEmail").value.trim();
-// Supabase kayıt isteğine 'email: epostaDegeri' olarak veriyi gönderiyorsun.
-
         method: "POST",
         headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ email: sahteEmail, password: sifre })
+        body: JSON.stringify({ email: epostaDegeri, password: sifre })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg || data.error_description || "Kayıt başarısız.");
@@ -193,6 +200,7 @@ const epostaDegeri = document.getElementById("kullaniciEmail").value.trim();
       mesajGoster("Hesap başarıyla açıldı! Giriş yapılıyor...", "basari");
       setTimeout(() => girisBasarili(ad, aktifToken, aktifUserId), 1000);
     } else {
+      const sahteEmail = `${ad}@kaganstudio.local`;
       // Supabase Auth SignIn
       const res = await fetch(`${SUPABASE_AUTH_URL}/token?grant_type=password`, {
         method: "POST",
@@ -267,12 +275,48 @@ cikisYapBtn.addEventListener("click", () => {
   cekmeceyiKapat();
 
   kullaniciAdi.value = "";
+  if (kullaniciEmail) kullaniciEmail.value = "";
   kullaniciSifre.value = "";
   mesajGoster("", "");
 
   anaUygulamaEkrani.classList.add("gizli");
   authEkrani.classList.remove("gizli");
 });
+
+// --- ŞİFREMİ UNUTTUM İŞLEVİ ---
+if (sifremiUnuttumBtn) {
+  sifremiUnuttumBtn.addEventListener("click", async () => {
+    const ad = kullaniciAdi.value.trim().toLowerCase();
+    if (!ad) {
+      mesajGoster("Lütfen önce yukarıdaki kutuya kullanıcı adını yaz!", "hata");
+      return;
+    }
+
+    const sahteEmail = `${ad}@kaganstudio.local`;
+    sifremiUnuttumBtn.disabled = true;
+    sifremiUnuttumBtn.textContent = "Gönderiliyor...";
+
+    try {
+      const res = await fetch(`${SUPABASE_AUTH_URL}/recover`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sahteEmail })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error_description || data.msg || "Şifre sıfırlama isteği gönderilemedi.");
+      }
+
+      mesajGoster("✅ Şifre sıfırlama talebi alındı.", "basari");
+    } catch (err) {
+      mesajGoster("Hata: " + err.message, "hata");
+    } finally {
+      sifremiUnuttumBtn.disabled = false;
+      sifremiUnuttumBtn.textContent = "Şifremi Unuttum?";
+    }
+  });
+}
 
 // --- 2. GÖREV VE BULUT İŞLEMLERİ ---
 async function buluttanGorevleriYukle() {
@@ -991,6 +1035,7 @@ if (acikOturum && acikToken && acikUid) {
   profilIsim.textContent = acikOturum;
   buluttanGorevleriYukle();
 }
+
 // --- AYARLAR MENÜSÜ İŞLEVİ ---
 const ayarMenuAcBtn = document.getElementById("ayarMenuAcBtn");
 const ayarMenusu = document.getElementById("ayarMenusu");
@@ -1004,41 +1049,6 @@ if (ayarMenuAcBtn && ayarMenusu) {
   document.addEventListener("click", (e) => {
     if (!ayarMenusu.contains(e.target) && e.target !== ayarMenuAcBtn) {
       ayarMenusu.classList.add("gizli");
-    }
-  });
-}
-// --- ŞİFREMİ UNUTTUM İŞLEVİ ---
-const sifremiUnuttumBtn = document.getElementById("sifremiUnuttumBtn");
-if (sifremiUnuttumBtn) {
-  sifremiUnuttumBtn.addEventListener("click", async () => {
-    const ad = kullaniciAdi.value.trim().toLowerCase();
-    if (!ad) {
-      mesajGoster("Lütfen önce yukarıdaki kutuya kullanıcı adını yaz!", "hata");
-      return;
-    }
-
-    const sahteEmail = `${ad}@kaganstudio.local`;
-    sifremiUnuttumBtn.disabled = true;
-    sifremiUnuttumBtn.textContent = "Gönderiliyor...";
-
-    try {
-      const res = await fetch(`${SUPABASE_AUTH_URL}/recover`, {
-        method: "POST",
-        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ email: sahteEmail })
-      });
-      
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error_description || data.msg || "Şifre sıfırlama isteği gönderilemedi.");
-      }
-
-      mesajGoster("✅ Şifre sıfırlama talebi alındı.", "basari");
-    } catch (err) {
-      mesajGoster("Hata: " + err.message, "hata");
-    } finally {
-      sifremiUnuttumBtn.disabled = false;
-      sifremiUnuttumBtn.textContent = "Şifremi Unuttum?";
     }
   });
 }
