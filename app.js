@@ -30,9 +30,32 @@ const bulutIstek = async (tablo, metod = "GET", govde = null, params = "") => {
 // --- DOM ELEMANLARI ---
 const authEkrani = document.getElementById("authEkrani");
 const anaUygulamaEkrani = document.getElementById("anaUygulamaEkrani");
+const authMesaj = document.getElementById("authMesaj");
+// --- GİRİŞ VE KAYIT SEKME GEÇİŞLERİ (E-posta ve Şifremi Unuttum Desteğiyle) ---
 const sekmeGiris = document.getElementById("sekmeGiris");
 const sekmeKayit = document.getElementById("sekmeKayit");
-const authMesaj = document.getElementById("authMesaj");
+const emailGrup = document.getElementById("emailGrup");
+const sifremiUnuttumBtn = document.getElementById("sifremiUnuttumBtn");
+const authGonderBtn = document.getElementById("authGonderBtn");
+
+if (sekmeGiris && sekmeKayit) {
+  sekmeGiris.addEventListener("click", () => {
+    sekmeGiris.classList.add("aktif");
+    sekmeKayit.classList.remove("aktif");
+    if (emailGrup) emailGrup.classList.add("gizli");
+    if (sifremiUnuttumBtn) sifremiUnuttumBtn.classList.remove("gizli");
+    if (authGonderBtn) authGonderBtn.textContent = "Giriş Yap";
+  });
+
+  sekmeKayit.addEventListener("click", () => {
+    sekmeKayit.classList.add("aktif");
+    sekmeGiris.classList.remove("aktif");
+    if (emailGrup) emailGrup.classList.remove("gizli");
+    if (sifremiUnuttumBtn) sifremiUnuttumBtn.classList.add("gizli");
+    if (authGonderBtn) authGonderBtn.textContent = "Kayıt Ol";
+  });
+}
+
 const kullaniciAdi = document.getElementById("kullaniciAdi");
 const kullaniciSifre = document.getElementById("kullaniciSifre");
 const authGonderBtn = document.getElementById("authGonderBtn");
