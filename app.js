@@ -1005,3 +1005,38 @@ if (ayarMenuAcBtn && ayarMenusu) {
     }
   });
 }
+// --- ŞİFREMİ UNUTTUM İŞLEVİ ---
+const sifremiUnuttumBtn = document.getElementById("sifremiUnuttumBtn");
+if (sifremiUnuttumBtn) {
+  sifremiUnuttumBtn.addEventListener("click", async () => {
+    const ad = kullaniciAdi.value.trim().toLowerCase();
+    if (!ad) {
+      mesajGoster("Lütfen önce yukarıdaki kutuya kullanıcı adını yaz!", "hata");
+      return;
+    }
+
+    const sahteEmail = `${ad}@kaganstudio.local`;
+    sifremiUnuttumBtn.disabled = true;
+    sifremiUnuttumBtn.textContent = "Gönderiliyor...";
+
+    try {
+      const res = await fetch(`${SUPABASE_AUTH_URL}/recover`, {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sahteEmail })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error_description || data.msg || "Şifre sıfırlama isteği gönderilemedi.");
+      }
+
+      mesajGoster("✅ Şifre sıfırlama talebi alındı.", "basari");
+    } catch (err) {
+      mesajGoster("Hata: " + err.message, "hata");
+    } finally {
+      sifremiUnuttumBtn.disabled = false;
+      sifremiUnuttumBtn.textContent = "Şifremi Unuttum?";
+    }
+  });
+}
