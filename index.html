@@ -25,10 +25,16 @@
 
       <div id="authMesaj" class="auth-mesaj gizli"></div>
 
-      <form id="authForm" class="auth-form" onsubmit="return false;">
+           <form id="authForm" class="auth-form" onsubmit="return false;">
         <div class="input-grup">
           <label for="kullaniciAdi">Kullanıcı Adı</label>
           <input type="text" id="kullaniciAdi" placeholder="kullanici_adi" autocomplete="off" required>
+        </div>
+
+        <!-- YENİ: Kayıt Olurken Görünecek E-posta Alanı -->
+        <div id="emailGrup" class="input-grup gizli">
+          <label for="kullaniciEmail">E-posta Adresi</label>
+          <input type="email" id="kullaniciEmail" placeholder="ornek@mail.com" autocomplete="email">
         </div>
 
         <div class="input-grup">
@@ -37,9 +43,10 @@
         </div>
 
         <button type="button" id="authGonderBtn" class="auth-ana-btn">Giriş Yap</button>
-        <button type="button" id="sifremiUnuttumBtn" style="background:transparent; border:none; color:var(--vurgu); font-size:13px; font-weight:600; cursor:pointer; text-align:center; margin-top:4px;">Şifremi Unuttum?</button>
-
+        
+        <button type="button" id="sifremiUnuttumBtn" class="gizli" style="background:transparent; border:none; color:var(--vurgu); font-size:13px; font-weight:600; cursor:pointer; text-align:center; margin-top:4px;">Şifremi Unuttum?</button>
       </form>
+
     </div>
   </div>
 
