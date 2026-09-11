@@ -198,6 +198,10 @@ const authIslemiYap = async () => {
 
       // Supabase Auth SignUp
       const res = await fetch(`${SUPABASE_AUTH_URL}/signup`, {
+        // Kayıt olma işleminde e-posta kullanım örneği:
+const epostaDegeri = document.getElementById("kullaniciEmail").value.trim();
+// Supabase kayıt isteğine 'email: epostaDegeri' olarak veriyi gönderiyorsun.
+
         method: "POST",
         headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({ email: sahteEmail, password: sifre })
