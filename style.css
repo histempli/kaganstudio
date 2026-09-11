@@ -1477,14 +1477,14 @@ body.zen-aktif #zenModuBtn {
 }
 /* AYARLAR MENÜSÜ - MOBİL VE TABLET TAŞMA ÇÖZÜMÜ */
 @media (max-width: 900px) {
- /* AYARLAR AÇILIR MENÜSÜ - KAYDIRILABİLİR YAPI */
+/* AYARLAR AÇILIR MENÜSÜ - HER ZAMAN KAYDIRILABİLİR */
 .ayar-acilir-menu {
   position: fixed;
   top: 70px;
   right: 12px;
   width: 260px;
-  max-height: calc(100vh - 90px); /* Ekran boyunu aşmaz */
-  overflow-y: auto;               /* İçerik taşarsa kaydırma çubuğu çıkar */
+  max-height: 380px;
+  overflow-y: auto;
   background-color: var(--bg-kart);
   backdrop-filter: blur(16px);
   border: 1px solid var(--kenarlik);
@@ -1498,7 +1498,7 @@ body.zen-aktif #zenModuBtn {
   animation: fadeIn 0.2s ease;
 }
 
-/* Scrollbar tasarımı (Şık ve ince görünüm) */
+/* Şık Scrollbar */
 .ayar-acilir-menu::-webkit-scrollbar {
   width: 5px;
 }
